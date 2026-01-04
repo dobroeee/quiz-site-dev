@@ -1,0 +1,3189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Квиз для расчёта стоимости сайта</title>
+
+  <!-- Стили -->
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #ffffff;
+    color: #111827;
+  }
+
+  .quiz-wrapper {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 16px;
+  }
+
+  .quiz-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 24px;
+    align-items: flex-start;
+  }
+
+  @media (max-width: 960px) {
+    .quiz-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .quiz-main,
+  .quiz-sidebar {
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  }
+
+  .quiz-sidebar {
+    position: sticky;
+    top: 20px;
+  }
+
+  /* === Заголовок и прогресс === */
+
+  .quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .quiz-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .quiz-progress-text {
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  .quiz-progress-bar {
+    width: 100%;
+    height: 6px;
+    border-radius: 999px;
+    background-color: #e5e7eb;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+
+  .quiz-progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #3b82f6, #6366f1);
+    transition: width 0.25s ease;
+  }
+
+  /* === Шаги === */
+
+  .quiz-step {
+    display: none;
+    animation: quiz-fade-in 0.25s ease;
+  }
+
+  .quiz-step.active {
+    display: block;
+  }
+
+  @keyframes quiz-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .quiz-step-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .quiz-step-subtitle {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 16px;
+  }
+
+  /* === Блок консультанта === */
+
+  .quiz-consultant {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid #bfdbfe;
+    background-color: #eff6ff;
+    font-size: 13px;
+    color: #1f2937;
+    margin-bottom: 14px;
+  }
+
+  .quiz-consultant-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  /* === Варианты ответов === */
+
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .quiz-option {
+    position: relative;
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .quiz-option:hover {
+    border-color: #93c5fd;
+    background-color: #eff6ff;
+    box-shadow: 0 3px 14px rgba(59, 130, 246, 0.12);
+  }
+
+  .quiz-option input[type="radio"] {
+    margin-top: 2px;
+  }
+
+  .quiz-option.disabled {
+    opacity: 0.55;
+    cursor: default;
+    background-color: #f3f4f6;
+    box-shadow: none;
+  }
+
+  .quiz-option.disabled:hover {
+    border-color: #e5e7eb;
+    background-color: #f3f4f6;
+    box-shadow: none;
+  }
+
+  .quiz-option-content {
+    flex: 1;
+  }
+
+  .quiz-option-label {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+
+  .quiz-option-meta {
+    font-size: 12px;
+    color: #6b7280;
+  }
+
+  textarea {
+    width: 100%;
+    margin-top: 6px;
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    font-size: 13px;
+    resize: vertical;
+    min-height: 60px;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  select {
+    font-size: 13px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    padding: 6px;
+    width: 100%;
+  }
+
+  /* === Ошибка === */
+
+  .quiz-error {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #b91c1c;
+    display: none;
+  }
+
+  .quiz-error.visible {
+    display: block;
+  }
+
+  /* === Навигация === */
+
+  .quiz-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .quiz-button {
+    border: none;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+  }
+
+  .quiz-button-primary {
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: #ffffff;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+  }
+
+  .quiz-button-primary:hover {
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    box-shadow: 0 8px 22px rgba(37, 99, 235, 0.45);
+    transform: translateY(-1px);
+  }
+
+  .quiz-button-primary:disabled {
+    opacity: 0.5;
+    cursor: default;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .quiz-button-secondary {
+    background-color: #e5e7eb;
+    color: #374151;
+  }
+
+  .quiz-button-secondary:hover {
+    background-color: #d1d5db;
+  }
+
+  .quiz-nav-hint {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #9ca3af;
+  }
+
+  /* === Боковая панель === */
+
+  .quiz-sidebar-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .quiz-price-main {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .quiz-price-sub {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 8px;
+  }
+
+  .quiz-price-base {
+    font-size: 12px;
+    color: #374151;
+    margin-bottom: 6px;
+  }
+
+  .quiz-sidebar-message {
+    font-size: 12px;
+    color: #111827;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background-color: #f3f4ff;
+    border: 1px solid #e0e7ff;
+    margin-top: 10px;
+  }
+
+  /* === Итоговые элементы в правом блоке === */
+
+  #quiz-coeff,
+  #quiz-discount {
+    font-size: 12px;
+    color: #2563eb;
+    margin-bottom: 4px;
+  }
+
+  #quiz-discount {
+    color: #16a34a;
+  }
+
+  /* === Резюме === */
+
+  .quiz-summary-item {
+    font-size: 11.5px;
+    padding: 4px 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .quiz-summary-item:last-child {
+    border-bottom: none;
+  }
+
+  #quiz-summary {
+    background: #fafafa;
+    border-radius: 8px;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    max-height: none;
+    overflow: visible;
+  }
+
+  /* === Контактная форма === */
+
+  .quiz-contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
+
+  @media (max-width: 640px) {
+    .quiz-contact-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .quiz-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 13px;
+  }
+
+  .quiz-field label {
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .quiz-field input[type="text"],
+  .quiz-field input[type="tel"],
+  .quiz-field input[type="email"] {
+    border-radius: 9px;
+    border: 1px solid #d1d5db;
+    padding: 7px 9px;
+    font-size: 13px;
+  }
+
+  /* --- Дополнительное поле --- */
+  .quiz-contact-extra-field {
+    margin-top: 8px;
+  }
+
+  .quiz-contact-extra-field input {
+    width: 100%;
+  }
+
+  /* --- Согласие и финал --- */
+  .quiz-privacy {
+    margin-top: 10px;
+    font-size: 12px;
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    color: #6b7280;
+  }
+
+  .quiz-privacy input[type="checkbox"] {
+    margin-top: 2px;
+  }
+
+  .quiz-final-message {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #16a34a;
+    display: none;
+  }
+
+  .quiz-final-message.visible {
+    display: block;
+  }
+
+  .quiz-final-message.error {
+    color: #b91c1c;
+  }
+
+  /* === Адаптация === */
+  @media (max-width: 600px) {
+    .quiz-title {
+      font-size: 18px;
+    }
+
+    .quiz-option-label {
+      font-size: 13px;
+    }
+
+    .quiz-option-meta {
+      font-size: 11px;
+    }
+
+    .quiz-button {
+      font-size: 13px;
+      padding: 9px 14px;
+    }
+  }
+  /* === Активная кнопка способа связи === */
+.quiz-contact-button.active {
+  border: 2px solid #3b82f6;
+  background-color: #f0f7ff;
+  color: #1e3a8a;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  transition: all 0.25s ease;
+}
+
+/* При наведении */
+.quiz-contact-button:hover {
+  border-color: #60a5fa;
+  background-color: #f8fafc;
+}
+/* Когда далее меняется на отправить заявку */
+#quiz-next,
+#quiz-submit {
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+
+  /* === Кастомный экран "Заявка принята" (без изменения размеров контейнера) === */
+  .quiz-main { position: relative; }
+  .quiz-success-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(2px);
+    border-radius: 16px;
+    z-index: 50;
+    pointer-events: auto;
+  }
+  .quiz-success-card {
+    width: 100%;
+    max-width: 560px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 12px 30px rgba(17, 24, 39, 0.10);
+    text-align: left;
+  }
+  .quiz-success-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 6px;
+  }
+  .quiz-success-text {
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.45;
+    margin-bottom: 14px;
+  }
+  .quiz-inline-error {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #dc2626;
+    display: none;
+  }
+  .quiz-field-label {
+    font-size: 13px;
+    color: #374151;
+    margin-bottom: 6px;
+  }
+  .quiz-inline-radio {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: 13px;
+    color: #111827;
+    margin: 6px 0;
+    cursor: pointer;
+  }
+  .quiz-inline-radio input { margin-top: 2px; }
+  #quiz-main.quiz-sent #quiz-success-overlay { display: flex; }
+  #quiz-main.quiz-sent #quiz-steps-container,
+  #quiz-main.quiz-sent .quiz-nav,
+  #quiz-main.quiz-sent .quiz-nav-hint {
+    visibility: hidden;
+  }
+
+</style>
+
+</head>
+<body>
+  <div class="quiz-wrapper">
+    <div class="quiz-layout">
+
+      <!-- Левая часть: основной квиз -->
+      <div class="quiz-main" id="quiz-main">
+        <div class="quiz-header">
+          <h1 class="quiz-title">Бриф-квиз на разработку сайта</h1>
+          <div class="quiz-progress-text" id="quiz-progress-text">Вопрос 1 из 1</div>
+        </div>
+
+        <div class="quiz-progress-bar">
+          <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+        </div>
+
+        <!-- Контейнер шагов квиза -->
+        <div id="quiz-steps-container">
+
+          <!-- ШАГ 1: тип сайта -->
+          <div class="quiz-step active" data-step="1">
+
+            <div class="quiz-consultant">
+              <div class="quiz-consultant-avatar">i</div>
+              <div>Начнём с базового — типа сайта. От этого зависит архитектура, объём работ и расчёт стоимости.</div>
+            </div>
+
+            <div class="quiz-step-title">1. Какой тип сайта вам необходим?</div>
+            <div class="quiz-step-subtitle">Выберите вариант, максимально близкий к вашей задаче.</div>
+
+            <div class="quiz-options">
+              <label class="quiz-option">
+                <input type="radio" name="q1" value="landing" data-min="50000" data-max="100000">
+                <div class="quiz-option-content">
+                  <div class="quiz-option-label">(a) Лэндинг (одностраничник)</div>
+                  <div class="quiz-option-meta">от 50 000 ₽ до 100 000 ₽</div>
+                </div>
+              </label>
+
+              <label class="quiz-option">
+                <input type="radio" name="q1" value="business" data-min="80000" data-max="150000">
+                <div class="quiz-option-content">
+                  <div class="quiz-option-label">(b) Интернет-магазин</div>
+                  <div class="quiz-option-meta">от 80 000 ₽ до 150 000 ₽</div>
+                </div>
+              </label>
+
+              <label class="quiz-option">
+                <input type="radio" name="q1" value="corporate" data-min="150000" data-max="300000">
+                <div class="quiz-option-content">
+                  <div class="quiz-option-label">(c) Корпоративный сайт</div>
+                  <div class="quiz-option-meta">от 150 000 ₽ до 300 000 ₽</div>
+                </div>
+              </label>
+
+              <label class="quiz-option">
+                <input type="radio" name="q1" value="portal" data-min="500000" data-max="800000">
+                <div class="quiz-option-content">
+                  <div class="quiz-option-label">(d) Портал / Сервис</div>
+                  <div class="quiz-option-meta">от 500 000 ₽ до 800 000 ₽</div>
+                </div>
+              </label>
+            </div>
+
+            <div class="quiz-error" id="quiz-error-1"></div>
+          </div>
+        </div>
+
+        <!-- Навигация -->
+        <div class="quiz-nav">
+        <button type="button" class="quiz-button quiz-button-secondary" id="quiz-prev">← Назад</button>
+        <button type="button" class="quiz-button quiz-button-primary" id="quiz-next">Далее →</button>
+        <button type="button" class="quiz-button quiz-button-primary" id="quiz-submit" style="display:none;">Отправить заявку</button>
+        </div>
+
+        <div class="quiz-nav-hint">Дальше появятся уточняющие вопросы по выбранному типу сайта.</div>
+
+        <div id="quiz-success-overlay" class="quiz-success-overlay" aria-hidden="true">
+          <div class="quiz-success-card">
+            <div class="quiz-success-title">Заявка принята</div>
+            <div class="quiz-success-text">Мы получили ответы и скоро свяжемся с вами удобным способом.</div>
+            <button type="button" class="quiz-button quiz-button-secondary" id="quiz-reset">Заполнить ещё раз</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Правая часть: итоговый расчёт -->
+<aside class="quiz-sidebar">
+  <div class="quiz-price-main">
+    <span id="quiz-price-min">0 ₽</span>
+    <span id="quiz-price-max" style="color:#6b7280;">– 0 ₽</span>
+  </div>
+
+  <div class="quiz-price-sub">
+    Это предварительный расчёт по выбранным параметрам. Финальная стоимость уточняется после общения.
+  </div>
+  
+  <div id="quiz-final-note" class="quiz-price-sub" style="display:none;"></div>
+
+  <div class="quiz-price-base">Базовая сумма по ответам: <span id="quiz-base-price">0 ₽</span></div>
+  <div class="quiz-price-base" id="quiz-coeff"></div>
+  <div class="quiz-price-base" id="quiz-discount"></div>
+
+  <div class="quiz-sidebar-message">
+    <!-- Список ответов -->
+    <div id="quiz-summary"
+         style="
+           font-size:11.5px;
+           color:#1f2937;
+           margin-top:10px;
+           line-height:1.45;
+           border:1px solid #e5e7eb;
+           border-radius:8px;
+           padding:10px 12px;
+           background:#fafafa;
+         ">
+    </div>
+
+    <!-- Информационный блок -->
+    <div id="quiz-hint-box"
+         style="
+           font-size:12.5px;
+           color:#374151;
+           background:#f3f4f6;
+           border:1px solid #e5e7eb;
+           border-radius:8px;
+           margin-top:14px;
+           padding:12px 14px;
+           line-height:1.55;
+         ">
+      Вы заполняете бриф для разработки сайта.<br>
+      Чем точнее ответы сейчас — тем быстрее мы сможем предложить оптимальный формат и стоимость.
+    </div>
+  </div>
+</aside>
+
+
+    </div>
+  </div>
+
+  <!-- Хранилище данных заявки (без отправки в Тильду) -->
+  <textarea id="quiz-answers-store" style="display:none;"></textarea>
+<!-- Скрипт -->
+  <script>
+  
+  (function() {
+
+
+  // === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
+  let currentStep = 1;
+  let stepElements = document.querySelectorAll(".quiz-step");
+  let totalSteps = stepElements.length;
+
+  const progressText = document.getElementById("quiz-progress-text");
+  const progressFill = document.getElementById("quiz-progress-fill");
+  const btnPrev = document.getElementById("quiz-prev");
+  const btnNext = document.getElementById("quiz-next");
+
+ 
+  const coeffBlock = document.getElementById("quiz-coeff");
+  const discountBlock = document.getElementById("quiz-discount");
+
+  function formatPrice(value) {
+    return value.toLocaleString('ru-RU') + " ₽";
+  }
+
+  function getSelected(name) {
+    return document.querySelector('input[name="' + name + '"]:checked');
+  }
+
+  // === РАСЧЁТ СТОИМОСТИ ===
+function calculateRange() {
+  // Эти вопросы НЕ должны влиять на цену (это не стоимость работ, а уточняющий вопрос)
+  const EXCLUDE_FROM_CALC_NAMES = new Set([
+    "q5" // бюджет клиента
+  ]);
+
+  const toInt = (v) => {
+    const n = Number(String(v ?? "").replace(/\s+/g, "").replace(",", "."));
+    return Number.isFinite(n) ? Math.trunc(n) : 0;
+  };
+
+  const clampInt = (n, min, max) => Math.max(min, Math.min(max, n));
+
+  // Возвращает {min,max} для инпута, если у него есть ценовые атрибуты, иначе null
+  const getInputRange = (input) => {
+    if (!input) return null;
+
+    if (input.name && EXCLUDE_FROM_CALC_NAMES.has(input.name)) return null;
+
+    const ds = input.dataset || {};
+
+    const hasMin = ds.min !== undefined && ds.min !== "";
+    const hasMax = ds.max !== undefined && ds.max !== "";
+    if (hasMin || hasMax) {
+      const min = toInt(ds.min ?? ds.price ?? 0);
+      const max = toInt(ds.max ?? ds.price ?? 0);
+      return { min, max };
+    }
+
+    const hasPrice = ds.price !== undefined && ds.price !== "";
+    if (hasPrice) {
+      const p = toInt(ds.price);
+      return { min: p, max: p };
+    }
+
+    return null;
+  };
+
+  // === 1) Базовая сумма по выбранным ответам (без коэффициентов/скидок) ===
+  let baseMin = 0;
+  let baseMax = 0;
+
+  document
+    .querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked')
+    .forEach((input) => {
+      const r = getInputRange(input);
+      if (!r) return;
+      baseMin += r.min;
+      baseMax += r.max;
+
+      // Специальная логика: мультиязычность "более двух языков" (+10 000 ₽ за каждый язык сверх двух)
+      if (input.name === "q9" && input.dataset && input.dataset.pricePer && input.dataset.counterId) {
+        const per = toInt(input.dataset.pricePer);
+        const counterEl = document.getElementById(input.dataset.counterId);
+        const count = counterEl ? clampInt(toInt(counterEl.getAttribute("data-value")), 0, 50) : 0;
+        const add = count * per;
+        baseMin += add;
+        baseMax += add;
+
+        const priceEl = document.getElementById("q9-lang-price");
+        if (priceEl) priceEl.textContent = String(count) + ": " + (add > 0 ? formatPrice(add) : "0 ₽");
+      }
+
+      if (input.name === "q9" && input.dataset && input.dataset.langPer) {
+        const per = toInt(input.dataset.langPer);
+        const option = input.closest(".quiz-option");
+        const field = option ? option.querySelector("textarea, input") : null;
+        const raw = field ? field.value : "";
+        const count = clampInt(toInt(raw), 0, 50);
+        const extraLangs = Math.max(0, count - 2);
+        const add = extraLangs * per;
+        baseMin += add;
+        baseMax += add;
+      }
+    });
+
+  if (baseMin > baseMax) {
+    const t = baseMin;
+    baseMin = baseMax;
+    baseMax = t;
+  }
+
+  // === 2) Применяем коэффициент по срокам (q4) к базовой цене ===
+  let finalMin = baseMin;
+  let finalMax = baseMax;
+
+  const q4 = getSelected("q4");
+  const deadlineMod = q4 ? toInt(q4.dataset.deadlineModifier) : 0;
+
+  if (q4 && q4.dataset.deadlineModifier !== undefined) {
+    coeffBlock.textContent =
+      deadlineMod > 0
+        ? "Коэффициент по срокам: +" + deadlineMod + "% к базовой цене."
+        : deadlineMod < 0
+          ? "Коэффициент по срокам: " + deadlineMod + "% (скидка к базовой цене)."
+          : "Коэффициент по срокам: без наценки.";
+
+    finalMin = finalMin + (finalMin * deadlineMod) / 100;
+    finalMax = finalMax + (finalMax * deadlineMod) / 100;
+  } else {
+    coeffBlock.textContent = "";
+  }
+
+  // === 3) Применяем скидку/надбавку по дизайну (q11) после коэффициента по срокам ===
+  const q11 = getSelected("q11");
+  const designMod = q11 ? toInt(q11.dataset.totalModifier) : 0;
+  if (q11 && q11.dataset.totalModifier !== undefined && q11.dataset.totalModifier !== "") {
+    finalMin = finalMin + (finalMin * designMod) / 100;
+    finalMax = finalMax + (finalMax * designMod) / 100;
+
+    const text =
+      designMod > 0
+        ? "Корректировка по дизайну: +" + designMod + "%."
+        : designMod < 0
+          ? "Корректировка по дизайну: " + designMod + "%."
+          : "";
+
+    if (text) {
+      coeffBlock.textContent = coeffBlock.textContent
+        ? (coeffBlock.textContent + " " + text)
+        : text;
+    }
+  }
+
+  // === 4) Применяем фиксированную скидку/надбавку (q6) ПОСЛЕ процентов ===
+  let discountValue = 0;
+  const q6 = getSelected("q6");
+  if (q6 && q6.dataset.discount !== undefined && q6.dataset.discount !== "") {
+    discountValue = toInt(q6.dataset.discount);
+    finalMin += discountValue;
+    finalMax += discountValue;
+
+    if (discountValue < 0) {
+      discountBlock.textContent = "–" + formatPrice(Math.abs(discountValue)) + " — скидка за ускоренный старт";
+    } else if (discountValue > 0) {
+      discountBlock.textContent = "+" + formatPrice(discountValue) + " — надбавка";
+    } else {
+      discountBlock.textContent = "";
+    }
+  } else {
+    discountBlock.textContent = "";
+  }
+
+  // === 5) Округление итогов ===
+  finalMin = Math.round(finalMin);
+  finalMax = Math.round(finalMax);
+
+  if (finalMin > finalMax) {
+    const t = finalMin;
+    finalMin = finalMax;
+    finalMax = t;
+  }
+
+  // === 6) Вывод ===
+  const priceMinEl = document.getElementById("quiz-price-min");
+  const priceMaxEl = document.getElementById("quiz-price-max");
+  const basePriceEl = document.getElementById("quiz-base-price");
+  const finalNoteEl = document.getElementById("quiz-final-note");
+
+  if (basePriceEl) {
+    basePriceEl.textContent =
+      baseMin === baseMax
+        ? formatPrice(baseMin)
+        : formatPrice(baseMin) + " – " + formatPrice(baseMax);
+  }
+
+  if (priceMinEl && priceMaxEl) {
+    priceMinEl.textContent = formatPrice(finalMin);
+    priceMaxEl.textContent = "– " + formatPrice(finalMax);
+  }
+
+  if (finalNoteEl) {
+    const hasDiscount = discountValue < 0;
+    const hasNegativeModifier = (deadlineMod < 0) || (designMod < 0);
+
+    if (hasDiscount || hasNegativeModifier) {
+      finalNoteEl.style.display = "";
+      finalNoteEl.textContent = "(с учётом выбранных скидок)";
+    } else {
+      finalNoteEl.style.display = "none";
+      finalNoteEl.textContent = "";
+    }
+  }
+
+  // === 7) Резюме справа ===
+  const summaryBox = document.getElementById("quiz-summary");
+  if (summaryBox) {
+    summaryBox.innerHTML = "";
+
+    document.querySelectorAll(".quiz-step").forEach((step) => {
+      const titleEl = step.querySelector(".quiz-step-title");
+      if (!titleEl) return;
+
+      const selectedInputs = step.querySelectorAll(
+        'input[type="radio"]:checked, input[type="checkbox"]:checked'
+      );
+      if (selectedInputs.length === 0) return;
+
+      const title = titleEl.textContent.trim();
+
+      const answers = Array.from(selectedInputs)
+        .map((input) => {
+          const option = input.closest(".quiz-option");
+          if (!option) return "";
+          const labelEl = option.querySelector(".quiz-option-label");
+          let label = labelEl ? labelEl.textContent.trim() : "";
+
+          // Добавляем значение для текстовых полей (если есть) в резюме
+          const field = option.querySelector("textarea, input[type='text'], input[type='number']");
+          if (field && field.value && field.value.trim()) {
+            label += " — " + field.value.trim();
+          }
+
+          return label;
+        })
+        .filter(Boolean);
+
+      if (answers.length === 0) return;
+
+      const item = document.createElement("div");
+      item.className = "quiz-summary-item";
+      item.textContent = title + ": " + answers.join(", ");
+      summaryBox.appendChild(item);
+    });
+  }
+}
+
+
+
+
+// === ЛЕНДИНГ: ВОПРОС 8 (интеграции) — чекбоксы + радио (взаимоисключение) ===
+document.addEventListener("change", (e) => {
+  const el = e.target;
+  if (!el || el.tagName !== "INPUT") return;
+
+  // Чекбоксы (a–d)
+  if (el.name === "q8_multi") {
+    // если выбирают любой чекбокс — сбрасываем радио (e/f)
+    const singles = document.querySelectorAll('input[name="q8_single"]');
+    singles.forEach((r) => { r.checked = false; });
+
+    calculateRange();
+    return;
+  }
+
+  // Радио (e/f)
+  if (el.name === "q8_single") {
+    if (el.checked) {
+      // если выбрали "Нет" или "Другое" — сбрасываем все чекбоксы (a–d)
+      const multis = document.querySelectorAll('input[name="q8_multi"]');
+      multis.forEach((cb) => { cb.checked = false; });
+    }
+
+    calculateRange();
+    return;
+  }
+});
+
+
+// === ЛОГИКА ВЫБОРА СПОСОБА СВЯЗИ ===
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".quiz-contact-button");
+  if (!btn) return;
+
+  const step = btn.closest(".quiz-step") || document;
+
+  const buttons = step.querySelectorAll(".quiz-contact-button");
+  buttons.forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+
+  const type = btn.dataset.contactType || "";
+
+  const extraField = document.getElementById("contact-extra-field");
+  const label = document.getElementById("contact-extra-label");
+  const input = document.getElementById("contact-extra-input");
+  const tgHint = document.getElementById("telegram-lang-hint");
+
+  const waField = document.getElementById("whatsapp-field");
+  const waCustom = document.getElementById("whatsapp-custom-input");
+  const waError = document.getElementById("whatsapp-error");
+  const waMain = document.querySelector('input[name="wa_source"][value="main"]');
+  const waCustomRadio = document.querySelector('input[name="wa_source"][value="custom"]');
+
+  if (tgHint) tgHint.style.display = "none";
+  if (waError) waError.style.display = "none";
+
+  if (type === "telegram") {
+    if (label) label.textContent = "Ник в Telegram";
+    if (input) input.placeholder = "@username";
+    if (extraField) extraField.style.display = "block";
+
+    if (waField) waField.style.display = "none";
+    if (waCustom) { waCustom.value = ""; waCustom.style.display = "none"; }
+    if (waMain) waMain.checked = true;
+    if (waCustomRadio) waCustomRadio.checked = false;
+
+  } else if (type === "whatsapp") {
+    if (extraField) extraField.style.display = "none";
+    if (input) input.value = "";
+
+    if (waField) waField.style.display = "block";
+    if (waMain) waMain.checked = true;
+    if (waCustomRadio) waCustomRadio.checked = false;
+    if (waCustom) { waCustom.value = ""; waCustom.style.display = "none"; }
+
+  } else if (type === "phone") {
+    // оставляем поле комментария для звонка (не обязательно)
+    if (label) label.textContent = "Комментарий (необязательно)";
+    if (input) input.placeholder = "Например: удобное время для связи";
+    if (extraField) extraField.style.display = "block";
+
+    if (waField) waField.style.display = "none";
+    if (waCustom) { waCustom.value = ""; waCustom.style.display = "none"; }
+    if (waMain) waMain.checked = true;
+    if (waCustomRadio) waCustomRadio.checked = false;
+
+  } else {
+    if (extraField) extraField.style.display = "none";
+    if (waField) waField.style.display = "none";
+  }
+});
+
+
+
+// === ОТОБРАЖЕНИЕ ШАГА ===
+function showStep(step) {
+  currentStep = step;
+  stepElements.forEach(el => el.classList.toggle("active", parseInt(el.dataset.step) === step));
+  btnPrev.disabled = (step === 1);
+
+  const percent = ((step - 1) / (totalSteps - 1 || 1)) * 100;
+  progressFill.style.width = percent + "%";
+  progressText.textContent = "Вопрос " + step + " из " + totalSteps;
+
+  updateNavButtons();
+}
+
+// === ПРОВЕРКА ЗАПОЛНЕНИЯ ШАГА ===
+function validateStep() {
+  const activeStep = document.querySelector(".quiz-step.active");
+  const error = activeStep.querySelector(".quiz-error");
+
+  const selectedInputs = activeStep.querySelectorAll(
+    'input[type="radio"]:checked, input[type="checkbox"]:checked'
+  );
+
+  if (selectedInputs.length === 0) {
+    if (error) {
+      error.textContent = "Пожалуйста, выберите вариант.";
+      error.classList.add("visible");
+    }
+    return false;
+  }
+
+  for (const input of selectedInputs) {
+    const parentOption = input.closest(".quiz-option");
+    if (!parentOption) continue;
+
+    const textField = parentOption.querySelector("textarea, input[type='text']");
+    if (textField && textField.offsetParent !== null && !textField.value.trim()) {
+      if (error) {
+        error.textContent = "Пожалуйста, заполните поле или выберите другой вариант.";
+        error.classList.add("visible");
+      }
+      return false;
+    }
+  }
+
+  if (error) {
+    error.textContent = "";
+    error.classList.remove("visible");
+  }
+
+  return true;
+}
+
+// === ДОПОЛНИТЕЛЬНО: управление видимостью кнопки "Далее" ===
+function updateNavButtons() {
+  const isLastStep = currentStep === totalSteps;
+  const nextBtn = document.getElementById("quiz-next");
+  const submitBtn = document.getElementById("quiz-submit");
+
+  if (!nextBtn || !submitBtn) return;
+
+  if (isLastStep) {
+    nextBtn.style.display = "none";
+    submitBtn.style.display = "inline-flex";
+  } else {
+    nextBtn.style.display = "inline-flex";
+    submitBtn.style.display = "none";
+  }
+}
+
+
+// === НАВИГАЦИЯ ===
+function handleNext() {
+  if (!validateStep()) return;
+  if (currentStep < totalSteps) {
+    showStep(currentStep + 1);
+  }
+  calculateRange();
+}
+
+function handlePrev() {
+  if (currentStep > 1) {
+    showStep(currentStep - 1);
+  }
+}
+
+btnNext.addEventListener("click", handleNext);
+btnPrev.addEventListener("click", handlePrev);
+
+  // === Хранилище данных заявки (без отправки в Тильду) ===
+  const answersStore = document.getElementById("quiz-answers-store");
+
+
+// === АВТОМАТИЧЕСКИЙ ПЕРЕХОД ===
+document.addEventListener("change", (e) => {
+  const input = e.target;
+
+  if (!input.matches('input[type="radio"]')) return;
+
+  const stepEl = input.closest(".quiz-step");
+  if (!stepEl) return;
+
+  if (input.name === "q1") {
+    calculateRange();
+    switchQuestionBranch();
+    return;
+  }
+
+  if (stepEl.querySelector('input[type="checkbox"]')) return;
+
+  const parentOption = input.closest(".quiz-option");
+  const hasTextField = parentOption && parentOption.querySelector("textarea, input[type='text']");
+  if (hasTextField) return;
+
+  setTimeout(() => handleNext(), 300);
+});
+
+
+  // === ОБЩИЙ ФИНАЛЬНЫЙ ШАГ (контакты, старый вариант) ===
+const contactStep = `
+  <div class="quiz-step" data-step="999">
+    <div class="quiz-consultant">
+      <div class="quiz-consultant-avatar">????</div>
+      <div>Отлично, вы почти всё заполнили! Остался последний шаг — контакты, чтобы мы могли отправить вам расчёт.</div>
+    </div>
+
+    <div class="quiz-step-title">Последний шаг. Контактные данные</div>
+    <div class="quiz-step-subtitle">Мы не передаём ваши данные третьим лицам и используем их только для связи по проекту.</div>
+
+    <div class="quiz-contact-grid" style="display:grid; gap:12px; margin-top:14px;">
+      <div class="quiz-field">
+  <label for="contact-name">Имя</label>
+  <input type="text" id="contact-name" name="user_name"
+         placeholder="Как к вам обращаться?"
+         autocomplete="given-name"
+         style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+</div>
+
+<div class="quiz-field">
+      <label for="contact-phone">Телефон</label>
+      <input type="tel" id="contact-phone" name="user_phone"
+            placeholder="+7"
+            autocomplete="tel"
+            style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+    </div>
+
+    <div class="quiz-field">
+      <label for="contact-email">Email</label>
+      <input type="email" id="contact-email" name="user_email"
+            placeholder="name@example.com"
+            autocomplete="email"
+            style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+    </div>
+
+    <div class="quiz-field">
+      <label for="contact-company">Компания (по желанию)</label>
+      <input type="text" id="contact-company" name="user_company"
+            placeholder="Название компании"
+            autocomplete="organization"
+            style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+    </div>
+    </div>
+
+    <div class="quiz-contact-preference" style="margin-top:16px;">
+      <div style="font-size:13px; color:#374151; margin-bottom:6px;">Предпочитаемый способ связи:</div>
+      <div class="quiz-contact-buttons" style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="quiz-contact-button" data-contact-type="telegram" style="flex:1; padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; background:#f9fafb; cursor:pointer;">Telegram</button>
+        <button type="button" class="quiz-contact-button" data-contact-type="whatsapp" style="flex:1; padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; background:#f9fafb; cursor:pointer;">WhatsApp</button>
+        <button type="button" class="quiz-contact-button" data-contact-type="phone" style="flex:1; padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; background:#f9fafb; cursor:pointer;">Звонок по телефону</button>
+      </div>
+
+      <div class="quiz-contact-extra-field" id="contact-extra-field" style="display:none; margin-top:12px;">
+        <div class="quiz-field">
+          <label id="contact-extra-label" style="font-size:13px; color:#374151;">Контакт</label>
+          <input type="text" id="contact-extra-input" placeholder="" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+              <div id="telegram-lang-hint" class="quiz-inline-error">Ник Telegram вводится только латиницей. Переключите раскладку на EN.</div>
+</div>
+      </div>
+    </div>
+
+    
+    <div id="whatsapp-field" style="display:none;margin-top:12px;">
+      <div class="quiz-field-label">Номер WhatsApp</div>
+
+      <label class="quiz-inline-radio">
+        <input type="radio" name="wa_source" value="main" checked>
+        <span>Использовать номер из поля «Телефон»</span>
+      </label>
+
+      <label class="quiz-inline-radio">
+        <input type="radio" name="wa_source" value="custom">
+        <span>Указать другой номер</span>
+      </label>
+
+      <input id="whatsapp-custom-input" type="tel"
+             placeholder="+7..."
+             autocomplete="tel"
+             style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;display:none;margin-top:6px;">
+      <div id="whatsapp-error" class="quiz-inline-error">Введите номер для WhatsApp.</div>
+    </div>
+
+
+    <label class="quiz-privacy" for="privacy-checkbox" style="margin-top:16px; font-size:12.5px; color:#374151; display:flex; gap:8px; align-items:flex-start; cursor:pointer;">
+  <input type="checkbox" id="privacy-checkbox" required style="margin-top:2px;">
+  <span>Я согласен(на) с условиями обработки персональных данных и политикой конфиденциальности.</span>
+  </label>
+
+    <div class="quiz-error" id="quiz-error-contact"></div>
+
+    
+  </div>
+`;
+
+
+
+   // === ВЕТКИ ВОПРОСОВ ===
+  const branches = {
+
+    // ---------------------------------------------------
+    // === ВЕТКА "ЛЕНДИНГ" ===
+    // ---------------------------------------------------
+    landing: `
+      <!-- Вопрос 2 -->
+      <div class="quiz-step" data-step="2">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Понимание целей сайта помогает определить структуру, контент и функциональность.</div>
+        </div>
+        <div class="quiz-step-title">2. Какие цели вы планируете решить через сайт?</div>
+        <div class="quiz-step-subtitle">Выберите один вариант, наиболее соответствующий вашим задачам.</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="leads"><div class="quiz-option-content"><div class="quiz-option-label">(a) Привлечение лидов / заявок</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q2" value="sales"><div class="quiz-option-content"><div class="quiz-option-label">(b) Продажа товаров онлайн</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q2" value="info"><div class="quiz-option-content"><div class="quiz-option-label">(c) Имидж компании / информирование</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q2" value="support"><div class="quiz-option-content"><div class="quiz-option-label">(d) Поддержка клиентов (FAQ, база знаний)</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q2" value="other"><div class="quiz-option-content"><div class="quiz-option-label">(e) Другое</div><textarea rows="4" placeholder="Опишите вашу цель"></textarea></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 3 -->
+      <div class="quiz-step" data-step="3">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Кто будет основным пользователем сайта — это важно для проектирования интерфейса и контента.</div>
+        </div>
+        <div class="quiz-step-title">3. Кто основная целевая аудитория сайта?</div>
+        <div class="quiz-step-subtitle">Выберите аудиторию, на которую ориентирован ваш сайт.</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="b2b"><div class="quiz-option-content"><div class="quiz-option-label">(a) B2B (компании)</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b2c"><div class="quiz-option-content"><div class="quiz-option-label">(b) B2C (частные лица)</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b2g"><div class="quiz-option-content"><div class="quiz-option-label">(c) B2G (государственные организации)</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q3" value="international"><div class="quiz-option-content"><div class="quiz-option-label">(d) Международная (несколько стран)</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q3" value="other"><div class="quiz-option-content"><div class="quiz-option-label">(e) Другое</div><textarea rows="4" placeholder="Опишите аудиторию"></textarea></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 4 -->
+      <div class="quiz-step" data-step="4">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Сроки напрямую влияют на нагрузку команды. Чем жёстче дедлайн, тем выше коэффициент к стоимости.</div>
+        </div>
+        <div class="quiz-step-title">4. Какой ожидаемый срок запуска проекта?</div>
+        <div class="quiz-step-subtitle">Это влияет на итоговую стоимость за счёт коэффициента к базовой цене.</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q4" value="lt2w" data-deadline-modifier="30"><div class="quiz-option-content"><div class="quiz-option-label">(a) Менее 2 недель</div><div class="quiz-option-meta">+30% к базовой цене</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q4" value="2-4w" data-deadline-modifier="10"><div class="quiz-option-content"><div class="quiz-option-label">(b) 2–4 недели</div><div class="quiz-option-meta">+10% к базовой цене</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q4" value="1-2m" data-deadline-modifier="0"><div class="quiz-option-content"><div class="quiz-option-label">(c) 1–2 месяца</div><div class="quiz-option-meta">Стандартные сроки (без наценки)</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q4" value="gt3m" data-deadline-modifier="-10"><div class="quiz-option-content"><div class="quiz-option-label">(d) Более 3 месяцев</div><div class="quiz-option-meta">Скидка 10% от базовой цены</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 5: Бюджет -->
+<div class="quiz-step" data-step="5">
+  <div class="quiz-step-title">5. Какой у вас ориентировочный бюджет на разработку?</div>
+  <div class="quiz-options">
+    <label class="quiz-option">
+      <input type="radio" name="q5" value="lt50" data-min="50000" data-max="50000">
+      <div class="quiz-option-content">
+        <div class="quiz-option-label">до 50 000 ₽</div>
+      </div>
+    </label>
+    <label class="quiz-option">
+      <input type="radio" name="q5" value="50-150" data-min="50000" data-max="150000">
+      <div class="quiz-option-content">
+        <div class="quiz-option-label">50–150 000 ₽</div>
+      </div>
+    </label>
+    <label class="quiz-option">
+      <input type="radio" name="q5" value="150-300" data-min="150000" data-max="300000">
+      <div class="quiz-option-content">
+        <div class="quiz-option-label">150–300 000 ₽</div>
+      </div>
+    </label>
+    <label class="quiz-option">
+      <input type="radio" name="q5" value="300-500" data-min="300000" data-max="500000">
+      <div class="quiz-option-content">
+        <div class="quiz-option-label">300–500 000 ₽</div>
+      </div>
+    </label>
+    <label class="quiz-option">
+      <input type="radio" name="q5" value="gt500" data-min="500000" data-max="700000">
+      <div class="quiz-option-content">
+        <div class="quiz-option-label">Более 500 000 ₽</div>
+      </div>
+    </label>
+    <label class="quiz-option">
+      <input type="radio" name="q5" value="notset" data-min="0" data-max="0">
+      <div class="quiz-option-content">
+        <div class="quiz-option-label">Бюджет не определён</div>
+      </div>
+    </label>
+  </div>
+  <div class="quiz-error"></div>
+</div>
+
+      <!-- Вопрос 6 -->
+      <div class="quiz-step" data-step="6">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Референсы помогают понять визуальные предпочтения и стиль проекта.</div>
+        </div>
+        <div class="quiz-step-title">6. Есть ли у вас готовые референсы/примеры сайтов?</div>
+        <div class="quiz-step-subtitle">Это поможет нам точнее оценить дизайн и логику.</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="q6" value="yes" data-discount="-5000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Да, прикреплю ссылки</div>
+              <div class="quiz-option-meta">–5 000 ₽ скидка за ускоренный старт</div>
+              <textarea rows="4" placeholder="Вставьте ссылки на примеры сайтов"></textarea>
+            </div>
+          </label>
+          <label class="quiz-option">
+            <input type="radio" name="q6" value="no">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Нет</div>
+              <div class="quiz-option-meta">0 ₽</div>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 7 -->
+      <div class="quiz-step" data-step="7">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Выбор платформы определяет технические возможности и стоимость поддержки.</div>
+        </div>
+        <div class="quiz-step-title">7. Предпочитаемая платформа разработки?</div>
+        <div class="quiz-step-subtitle">Это влияет на стоимость и возможности интеграций.</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q7" value="tilda" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) Tilda</div><div class="quiz-option-meta">Без доплаты</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q7" value="wordpress" data-price="20000"><div class="quiz-option-content"><div class="quiz-option-label">(b) WordPress</div><div class="quiz-option-meta">+20 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q7" value="custom" data-price="50000"><div class="quiz-option-content"><div class="quiz-option-label">(c) Самописное</div><div class="quiz-option-meta">+50 000 ₽</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 8 -->
+      <div class="quiz-step" data-step="8">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Интеграции помогают автоматизировать бизнес-процессы и повысить эффективность.</div></div>
+        <div class="quiz-step-title">8. Нужны ли вам интеграции?</div>
+        <div class="quiz-step-subtitle">Можно выбрать несколько вариантов.</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="checkbox" name="q8_multi" value="crm" data-price="15000"><div class="quiz-option-content"><div class="quiz-option-label">(a) CRM (Bitrix24, amoCRM)</div><div class="quiz-option-meta">+15 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="checkbox" name="q8_multi" value="payments" data-price="10000"><div class="quiz-option-content"><div class="quiz-option-label">(b) Платёжные системы</div><div class="quiz-option-meta">+10 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="checkbox" name="q8_multi" value="email" data-price="8000"><div class="quiz-option-content"><div class="quiz-option-label">(c) Email-рассылки</div><div class="quiz-option-meta">+8 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="checkbox" name="q8_multi" value="api" data-price="25000"><div class="quiz-option-content"><div class="quiz-option-label">(d) API сторонних сервисов</div><div class="quiz-option-meta">+20 000–30 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q8_single" value="no" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(e) Нет</div><div class="quiz-option-meta">0 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q8_single" value="other"><div class="quiz-option-content"><div class="quiz-option-label">(f) Другое</div><textarea rows="4" placeholder="Опишите нужную интеграцию"></textarea></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 9 -->
+      <div class="quiz-step" data-step="9">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Мультиязычность важна для международных проектов.</div></div>
+        <div class="quiz-step-title">9. Мультиязычность</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q9" value="single" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) Только русский язык</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q9" value="dual" data-price="10000"><div class="quiz-option-content"><div class="quiz-option-label">(b) Двуязычный</div><div class="quiz-option-meta">+10 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q9" value="multi" data-price="20000"><div class="quiz-option-content"><div class="quiz-option-label">(c) Более 2 языков</div><div class="quiz-option-meta">+10 000 ₽ за каждый язык</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 10 -->
+      <div class="quiz-step" data-step="10">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Фирменные цвета и шрифты ускоряют процесс разработки дизайна.</div></div>
+        <div class="quiz-step-title">10. Есть ли у вас фирменные шрифты и цвета бренда?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q10" value="ready" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) Да, есть фирменные шрифты и цвета</div><div class="quiz-option-meta">Без доплаты</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q10" value="partial" data-price="15000"><div class="quiz-option-content"><div class="quiz-option-label">(b) Есть частично</div><div class="quiz-option-meta">+10 000–20 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q10" value="none" data-price="30000"><div class="quiz-option-content"><div class="quiz-option-label">(c) Нет, нужно разработать палитру</div><div class="quiz-option-meta">+20 000–40 000 ₽</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 11 -->
+      <div class="quiz-step" data-step="11">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Кастомные элементы делают сайт уникальным, но увеличивают время и стоимость.</div></div>
+        <div class="quiz-step-title">11. Нужна ли кастомная разработка — калькулятор, интерактивный элемент или модуль?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q11" value="no" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) Нет — стандартный функционал</div><div class="quiz-option-meta">0 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q11" value="simple" data-price="35000"><div class="quiz-option-content"><div class="quiz-option-label">(b) Простой интерактив</div><div class="quiz-option-meta">+20 000–50 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q11" value="complex" data-price="85000"><div class="quiz-option-content"><div class="quiz-option-label">(c) Сложный модуль / API</div><div class="quiz-option-meta">+50 000–120 000 ₽</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+    `,
+
+    // Заготовки для будущих веток
+    business: `
+      <!-- Вопрос 2 -->
+      <div class="quiz-step" data-step="2">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это влияет на структуру каталога, количество логики и итоговую сложность проекта.</div>
+        </div>
+        <div class="quiz-step-title">2. Какой тип интернет-магазина вам нужен?</div>
+        <div class="quiz-step-subtitle">Выберите вариант, наиболее близкий по масштабу.</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="shop_type" value="small" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Небольшой магазин (до 50 товаров)</div>
+              <div class="quiz-option-meta">Простая структура, базовый каталог, минимальная логика — без доплаты</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_type" value="mid" data-min="40000" data-max="80000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Средний магазин (50–300 товаров)</div>
+              <div class="quiz-option-meta">Категории, фильтры, поиск, расширенная карточка товара — +40 000–80 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_type" value="big" data-min="120000" data-max="250000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Крупный магазин (300+ товаров)</div>
+              <div class="quiz-option-meta">Сложная структура, высокая нагрузка, масштабируемость — +120 000–250 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_type" value="other" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(e) Другое</div>
+              <textarea class="quiz-textarea" rows="4" placeholder="Опишите, какой магазин нужен"></textarea>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 3 -->
+      <div class="quiz-step" data-step="3">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это напрямую влияет на трудоёмкость и бюджет разработки.</div>
+        </div>
+        <div class="quiz-step-title">3. Сколько основных страниц планируется на сайте?</div>
+        <div class="quiz-step-subtitle">Оцениваем объём структуры и контента.</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="shop_pages" value="lt5" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) До 5 страниц</div>
+              <div class="quiz-option-meta">Базовый уровень — входит в стоимость</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_pages" value="6-10" data-min="40000" data-max="40000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) 6–10 страниц</div>
+              <div class="quiz-option-meta">Стандартная структура — +40 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_pages" value="11-20" data-min="100000" data-max="100000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) 11–20 страниц</div>
+              <div class="quiz-option-meta">Расширенный сайт — +100 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_pages" value="gt20" data-min="170000" data-max="170000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(d) Более 20 страниц</div>
+              <div class="quiz-option-meta">Индивидуальный расчёт (ориентир: +170 000 ₽)</div>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 4 -->
+      <div class="quiz-step" data-step="4">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Выберите количество товаров для загрузки (цена за загрузку одного товара от 250 ₽).</div>
+        </div>
+        <div class="quiz-step-title">4. Загрузка товаров</div>
+        <div class="quiz-step-subtitle">Если товары уже загружены или загрузка не нужна — выберите соответствующий пункт.</div>
+
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="shop_upload" value="no" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Загрузка товаров не потребуется</div>
+              <div class="quiz-option-meta">0 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_upload" value="lt50" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) До 50 товаров</div>
+              <div class="quiz-option-meta">Входит в стоимость</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_upload" value="50-200" data-min="30000" data-max="50000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) 50–200 товаров</div>
+              <div class="quiz-option-meta">+30 000–50 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_upload" value="200-1000" data-min="50000" data-max="250000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(d) 200–1 000 товаров</div>
+              <div class="quiz-option-meta">+50 000–250 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_upload" value="gt1000" data-min="250000" data-max="250000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(e) Более 1 000 товаров</div>
+              <div class="quiz-option-meta">Индивидуальный расчёт, от 250 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_upload" value="other" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(f) Другое</div>
+              <textarea class="quiz-textarea" rows="4" placeholder="Опишите объём и особенности загрузки"></textarea>
+            </div>
+          </label>
+        </div>
+
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 5 -->
+      <div class="quiz-step" data-step="5">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Платформа влияет на стоимость, гибкость и возможность интеграций.</div>
+        </div>
+        <div class="quiz-step-title">5. Предпочитаемая платформа для разработки</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="shop_platform" value="tilda" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Tilda</div>
+              <div class="quiz-option-meta">Без доплаты (быстрый запуск, меньше кастомизации)</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_platform" value="wp" data-min="20000" data-max="20000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) WordPress</div>
+              <div class="quiz-option-meta">+20 000 ₽ (гибкость, SEO, модули)</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_platform" value="custom" data-min="150000" data-max="300000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Самописное решение</div>
+              <div class="quiz-option-meta">+150 000–300 000 ₽ (индивидуальный код, масштабируемость)</div>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 6 -->
+      <div class="quiz-step" data-step="6">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Интеграции влияют на сложность программирования и время тестирования.</div>
+        </div>
+        <div class="quiz-step-title">6. Нужны ли интеграции с внешними сервисами?</div>
+        <div class="quiz-step-subtitle">Можно выбрать несколько вариантов.</div>
+
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="checkbox" name="shop_int_multi" value="pay" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Оплата онлайн</div>
+              <div class="quiz-option-meta">ЮKassa, CloudPayments, Stripe, Robokassa, Apple Pay / Google Pay, рассрочка</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="shop_int_multi" value="delivery" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Доставка и логистика</div>
+              <div class="quiz-option-meta">СДЭК, Boxberry, Почта России, DPD, PickPoint, ПВЗ на карте, трекинг, накладные</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="shop_int_multi" value="crm" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) CRM и учёт заказов / склад</div>
+              <div class="quiz-option-meta">amoCRM, Битрикс24, RetailCRM, 1С, МойСклад, синхронизация товаров/цен/остатков/заказов</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="shop_int_multi" value="mp" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(d) Маркетплейсы</div>
+              <div class="quiz-option-meta">Wildberries, Ozon, Яндекс Маркет, Авито, синхронизация товаров/остатков/заказов</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="shop_int_multi" value="analytics" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(e) Аналитика и маркетинг</div>
+              <div class="quiz-option-meta">GA4, Метрика, пиксели VK/Meta, сквозная аналитика Roistat/Calltouch/UIS</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="shop_int_multi" value="notify" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(f) Уведомления и рассылки</div>
+              <div class="quiz-option-meta">email UniSender/SendPulse/Mailchimp, SMS, Telegram/WhatsApp, брошенная корзина</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_int_single" value="no" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(g) Интеграции не нужны</div>
+              <div class="quiz-option-meta">0 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_int_single" value="other" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(h) Другое</div>
+              <textarea class="quiz-textarea" rows="4" placeholder="Какие интеграции нужны?"></textarea>
+            </div>
+          </label>
+        </div>
+
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 7 -->
+      <div class="quiz-step" data-step="7">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это влияет на структуру, тексты и технические настройки сайта.</div>
+        </div>
+        <div class="quiz-step-title">7. Планируется ли SEO-оптимизация при запуске?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="shop_seo" value="base" data-min="10000" data-max="10000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Базовая SEO-оптимизация</div>
+              <div class="quiz-option-meta">+10 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_seo" value="pro" data-min="25000" data-max="40000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Продвинутая</div>
+              <div class="quiz-option-meta">+25 000–40 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_seo" value="no" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Пока не планируется</div>
+              <div class="quiz-option-meta">Без доплаты</div>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 8 -->
+      <div class="quiz-step" data-step="8">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Брендбук влияет на скорость дизайна и единый стиль сайта.</div>
+        </div>
+        <div class="quiz-step-title">8. Есть ли у вас брендбук?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="shop_brand" value="full" data-min="-10000" data-max="-10000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Да, есть полный брендбук</div>
+              <div class="quiz-option-meta">Скидка −10 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_brand" value="part" data-min="10000" data-max="10000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Есть частично</div>
+              <div class="quiz-option-meta">Доплата +10 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_brand" value="logo" data-min="20000" data-max="20000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Есть только логотип</div>
+              <div class="quiz-option-meta">Доплата +20 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_brand" value="none" data-min="30000" data-max="60000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(d) Нет, брендбук нужно разработать</div>
+              <div class="quiz-option-meta">+30 000–60 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_brand" value="other" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(e) Другое</div>
+              <textarea class="quiz-textarea" rows="4" placeholder="Опишите, что есть по бренду"></textarea>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 9 -->
+      <div class="quiz-step" data-step="9">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это влияет на сроки и стоимость дизайна.</div>
+        </div>
+        <div class="quiz-step-title">9. Нужен ли уникальный дизайн или подойдёт адаптация шаблона?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="shop_design" value="template" data-min="-20000" data-max="-20000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Использовать готовый шаблон с доработкой</div>
+              <div class="quiz-option-meta">−20 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_design" value="unique" data-min="30000" data-max="30000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Уникальный дизайн под бренд</div>
+              <div class="quiz-option-meta">+30 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_design" value="full" data-min="60000" data-max="100000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Полностью индивидуальный визуальный стиль с анимацией</div>
+              <div class="quiz-option-meta">+60 000–100 000 ₽</div>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 10 -->
+      <div class="quiz-step" data-step="10">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это влияет на этап аналитики и проектирования.</div>
+        </div>
+        <div class="quiz-step-title">10. Есть ли у вас структура сайта или нужно её разработать?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="shop_structure" value="ready" data-min="-20000" data-max="-20000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Да, структура готова</div>
+              <div class="quiz-option-meta">−20 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_structure" value="draft" data-min="-10000" data-max="-10000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Есть набросок или пример</div>
+              <div class="quiz-option-meta">−10 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_structure" value="need" data-min="20000" data-max="20000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Нужно полностью разработать структуру</div>
+              <div class="quiz-option-meta">+20 000 ₽</div>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 11 -->
+      <div class="quiz-step" data-step="11">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это влияет на сроки и необходимость привлечения копирайтера / контент-менеджера.</div>
+        </div>
+        <div class="quiz-step-title">11. Есть ли у вас готовый контент (тексты, фото, видео)?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="shop_content" value="all" data-min="-15000" data-max="-15000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Всё готово</div>
+              <div class="quiz-option-meta">−15 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_content" value="part" data-min="10000" data-max="20000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Часть контента есть, часть нужно доработать</div>
+              <div class="quiz-option-meta">+10 000–20 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_content" value="seo" data-min="30000" data-max="50000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Нужна полная подготовка контента под SEO</div>
+              <div class="quiz-option-meta">+30 000–50 000 ₽</div>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 12 -->
+      <div class="quiz-step" data-step="12">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Кастомная разработка влияет на сложность реализации и конечную стоимость.</div>
+        </div>
+        <div class="quiz-step-title">12. Нужна ли вам кастомная разработка — например, калькулятор, интерактив или модуль нестандартной логики?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="shop_custom" value="no" data-min="0" data-max="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Нет — стандартный функционал</div>
+              <div class="quiz-option-meta">Без доплаты</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_custom" value="simple" data-min="20000" data-max="50000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Да, нужен простой интерактив</div>
+              <div class="quiz-option-meta">+20 000–50 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_custom" value="complex" data-min="50000" data-max="120000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Да, нужен сложный модуль</div>
+              <div class="quiz-option-meta">+50 000–120 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="shop_custom" value="consult" data-min="0" data-max="20000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(d) Пока не решили, нужна консультация</div>
+              <div class="quiz-option-meta">+0–20 000 ₽</div>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 13 -->
+      <div class="quiz-step" data-step="13">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это помогает адаптировать дизайн, стиль и функционал под специфику ниши.</div>
+        </div>
+        <div class="quiz-step-title">13. Какая сфера у вашего бизнеса?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="shop_niche" value="build" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) Строительство и ремонт</div></div></label>
+          <label class="quiz-option"><input type="radio" name="shop_niche" value="beauty" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(b) Услуги красоты / клиники / салоны</div></div></label>
+          <label class="quiz-option"><input type="radio" name="shop_niche" value="edu" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(c) Образование / курсы / тренинги</div></div></label>
+          <label class="quiz-option"><input type="radio" name="shop_niche" value="it" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(d) IT / технологии / SaaS</div></div></label>
+          <label class="quiz-option"><input type="radio" name="shop_niche" value="prod" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(e) Производство / промышленность</div></div></label>
+          <label class="quiz-option"><input type="radio" name="shop_niche" value="consult" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(f) Юридические / консалтинговые / финансовые услуги</div></div></label>
+          <label class="quiz-option"><input type="radio" name="shop_niche" value="horeca" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(g) Ресторан / отель / туризм</div></div></label>
+          <label class="quiz-option"><input type="radio" name="shop_niche" value="other" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(h) Другое</div><textarea class="quiz-textarea" rows="4" placeholder="Опишите нишу"></textarea></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 14 -->
+      <div class="quiz-step" data-step="14">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Сроки напрямую влияют на нагрузку команды. Чем жёстче дедлайн, тем выше коэффициент к стоимости.</div>
+        </div>
+        <div class="quiz-step-title">14. Какой ожидаемый срок запуска проекта?</div>
+        <div class="quiz-step-subtitle">Это влияет на итоговую стоимость за счёт коэффициента к базовой цене.</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q4" value="lt2w" data-deadline-modifier="30"><div class="quiz-option-content"><div class="quiz-option-label">(a) Менее 2 недель</div><div class="quiz-option-meta">+30% к базовой стоимости</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q4" value="2-4w" data-deadline-modifier="10"><div class="quiz-option-content"><div class="quiz-option-label">(b) 2–4 недели</div><div class="quiz-option-meta">+10% к базовой стоимости</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q4" value="1-2m" data-deadline-modifier="0"><div class="quiz-option-content"><div class="quiz-option-label">(c) 1–2 месяца</div><div class="quiz-option-meta">Стандартные сроки</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q4" value="gt2m" data-deadline-modifier="-10"><div class="quiz-option-content"><div class="quiz-option-label">(d) Более 2 месяцев</div><div class="quiz-option-meta">Скидка 10% к базовой стоимости</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 15 -->
+      <div class="quiz-step" data-step="15">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это помогает подобрать подходящий формат и технологический стек.</div>
+        </div>
+        <div class="quiz-step-title">15. Какой у вас ориентировочный бюджет на разработку?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q5" value="lt100" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) До 100 000 ₽</div><div class="quiz-option-meta">Базовый сайт</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q5" value="100-250" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(b) 100 000–250 000 ₽</div><div class="quiz-option-meta">Стандартный интернет-магазин</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q5" value="250-500" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(c) 250 000–500 000 ₽</div><div class="quiz-option-meta">Расширенный магазин с SEO и интеграциями</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q5" value="gt500" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(d) Более 500 000 ₽</div><div class="quiz-option-meta">Индивидуальный проект под ключ</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q5" value="na" data-min="0" data-max="0"><div class="quiz-option-content"><div class="quiz-option-label">(e) Бюджет пока не определён</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+    `,
+    corporate: `<!-- Вопрос 2 -->
+      <div class="quiz-step" data-step="2">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это влияет на приоритет и коэффициент стоимости.</div></div>
+        <div class="quiz-step-title">2. Какой ожидаемый срок запуска проекта?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="q4" value="lt2w" data-deadline-modifier="30">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Менее 2 недель</div>
+              <div class="quiz-option-meta">+30% к базовой стоимости</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q4" value="2-4w" data-deadline-modifier="10">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) 2–4 недели</div>
+              <div class="quiz-option-meta">+10% к базовой стоимости</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q4" value="1-2m" data-deadline-modifier="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) 1–2 месяца</div>
+              <div class="quiz-option-meta">Стандартные сроки</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q4" value="gt2m" data-deadline-modifier="-10">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(d) Более 2 месяцев</div>
+              <div class="quiz-option-meta">Скидка 10% к базовой стоимости</div>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 3 -->
+      <div class="quiz-step" data-step="3">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это помогает подобрать подходящий формат и технологический стек.</div></div>
+        <div class="quiz-step-title">3. Какой у вас ориентировочный бюджет на разработку?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q5" value="lt100"><div class="quiz-option-content"><div class="quiz-option-label">(a) До 100 000 ₽</div><div class="quiz-option-meta">Базовый сайт</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q5" value="100-250"><div class="quiz-option-content"><div class="quiz-option-label">(b) 100 000–250 000 ₽</div><div class="quiz-option-meta">Стандартный корпоративный сайт</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q5" value="250-500"><div class="quiz-option-content"><div class="quiz-option-label">(c) 250 000–500 000 ₽</div><div class="quiz-option-meta">Расширенный сайт с SEO и интеграциями</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q5" value="gt500"><div class="quiz-option-content"><div class="quiz-option-label">(d) Более 500 000 ₽</div><div class="quiz-option-meta">Индивидуальный проект под ключ</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q5" value="na"><div class="quiz-option-content"><div class="quiz-option-label">(e) Бюджет пока не определён</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 4 -->
+      <div class="quiz-step" data-step="4">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это влияет на подход к структуре, навигации и акцент в дизайне.</div></div>
+        <div class="quiz-step-title">4. Какие цели вы хотите решить с помощью сайта?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="corp_q1" value="about" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) Представление компании и услуг</div><div class="quiz-option-meta">Информирование, доверие</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q1" value="leads" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(b) Привлечение клиентов и заявок</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q1" value="image" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(c) Повышение имиджа бренда</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q1" value="seo" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(d) Продвижение в поиске (SEO-оптимизация)</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q1" value="other"><div class="quiz-option-content"><div class="quiz-option-label">(e) Другое</div><textarea class="quiz-textarea" placeholder="Опишите цель"></textarea></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 5 -->
+      <div class="quiz-step" data-step="5">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это помогает адаптировать дизайн, стиль и функционал под специфику ниши.</div></div>
+        <div class="quiz-step-title">5. Какая сфера у вашего бизнеса?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="corp_q2" value="build" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) Строительство и ремонт</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q2" value="beauty" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(b) Услуги красоты / клиники / салоны</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q2" value="edu" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(c) Образование / курсы / тренинги</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q2" value="it" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(d) IT / технологии / SaaS</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q2" value="prod" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(e) Производство / промышленность</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q2" value="consult" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(f) Юридические / консалтинговые / финансовые услуги</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q2" value="horeca" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(g) Ресторан / отель / туризм</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q2" value="other"><div class="quiz-option-content"><div class="quiz-option-label">(h) Другое</div><textarea class="quiz-textarea" placeholder="Опишите сферу"></textarea></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 6 -->
+      <div class="quiz-step" data-step="6">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это напрямую влияет на трудоёмкость и бюджет разработки.</div></div>
+        <div class="quiz-step-title">6. Сколько основных страниц планируется на сайте?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="corp_q3" value="lt5" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) До 5 страниц</div><div class="quiz-option-meta">Входит в стоимость: базовая структура, адаптивная верстка, формы заявок, базовые блоки и контакты.</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q3" value="6-10" data-min="120000" data-max="160000"><div class="quiz-option-content"><div class="quiz-option-label">(b) 6–10 страниц</div><div class="quiz-option-meta">Стандартная структура — от 120 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q3" value="11-20" data-min="180000" data-max="240000"><div class="quiz-option-content"><div class="quiz-option-label">(c) 11–20 страниц</div><div class="quiz-option-meta">Расширенный сайт — от 180 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q3" value="gt20" data-min="250000" data-max="350000"><div class="quiz-option-content"><div class="quiz-option-label">(d) Более 20 страниц</div><div class="quiz-option-meta">Индивидуальный расчёт (от 250 000 ₽)</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 7 -->
+      <div class="quiz-step" data-step="7">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это влияет на этап аналитики и проектирования.</div></div>
+        <div class="quiz-step-title">7. Есть ли у вас структура сайта или нужно её разработать?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="corp_q4" value="ready" data-price="-20000"><div class="quiz-option-content"><div class="quiz-option-label">(a) Да, структура готова</div><div class="quiz-option-meta">–20 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q4" value="draft" data-price="-10000"><div class="quiz-option-content"><div class="quiz-option-label">(b) Есть набросок или пример</div><div class="quiz-option-meta">–10 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q4" value="need" data-price="20000"><div class="quiz-option-content"><div class="quiz-option-label">(c) Нужно полностью разработать структуру</div><div class="quiz-option-meta">+20 000 ₽</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 8 -->
+      <div class="quiz-step" data-step="8">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это влияет на сроки и стоимость дизайна.</div></div>
+        <div class="quiz-step-title">8. Нужен ли уникальный дизайн или подойдёт адаптация шаблона?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="corp_q5" value="tpl" data-price="-20000"><div class="quiz-option-content"><div class="quiz-option-label">(a) Использовать готовый шаблон с доработкой</div><div class="quiz-option-meta">–20 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q5" value="unique" data-price="30000"><div class="quiz-option-content"><div class="quiz-option-label">(b) Уникальный дизайн под бренд</div><div class="quiz-option-meta">+30 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q5" value="full" data-min="60000" data-max="100000"><div class="quiz-option-content"><div class="quiz-option-label">(c) Полностью индивидуальный визуальный стиль с анимацией</div><div class="quiz-option-meta">+60 000–100 000 ₽</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 9 -->
+      <div class="quiz-step" data-step="9">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это влияет на стоимость, гибкость и возможность интеграций.</div></div>
+        <div class="quiz-step-title">9. Предпочитаемая платформа для разработки</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="corp_q6" value="tilda" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) Tilda</div><div class="quiz-option-meta">без доплаты (быстрый запуск, меньше кастомизации)</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q6" value="wp" data-price="20000"><div class="quiz-option-content"><div class="quiz-option-label">(b) WordPress</div><div class="quiz-option-meta">+20 000 ₽ (гибкость, SEO, модули)</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q6" value="custom" data-min="50000" data-max="100000"><div class="quiz-option-content"><div class="quiz-option-label">(c) Самописное решение</div><div class="quiz-option-meta">+50 000–100 000 ₽ (индивидуальный код, масштабируемость)</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 10 -->
+      <div class="quiz-step" data-step="10">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это влияет на сроки и необходимость привлечения копирайтера / контент-менеджера.</div></div>
+        <div class="quiz-step-title">10. Есть ли у вас готовый контент (тексты, фото, видео)?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="corp_q7" value="ready" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) Всё готово</div><div class="quiz-option-meta">без доплаты</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q7" value="part" data-min="10000" data-max="20000"><div class="quiz-option-content"><div class="quiz-option-label">(b) Часть контента есть, часть нужно доработать</div><div class="quiz-option-meta">+10 000–20 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q7" value="full" data-min="30000" data-max="50000"><div class="quiz-option-content"><div class="quiz-option-label">(c) Нужна полная подготовка контента под SEO</div><div class="quiz-option-meta">+30 000–50 000 ₽</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 11 -->
+      <div class="quiz-step" data-step="11">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это влияет на структуру, тексты и технические настройки сайта.</div></div>
+        <div class="quiz-step-title">11. Планируется ли SEO-оптимизация при запуске?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="corp_q8" value="basic" data-price="10000"><div class="quiz-option-content"><div class="quiz-option-label">(a) Базовая SEO-оптимизация</div><div class="quiz-option-meta">+10 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q8" value="pro" data-min="25000" data-max="40000"><div class="quiz-option-content"><div class="quiz-option-label">(b) Продвинутая</div><div class="quiz-option-meta">+25 000–40 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q8" value="no" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(c) Пока не планируется</div><div class="quiz-option-meta">без доплаты</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 12 -->
+      <div class="quiz-step" data-step="12">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это влияет на сложность программирования и время тестирования.</div></div>
+        <div class="quiz-step-title">12. Нужны ли интеграции с внешними сервисами?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="checkbox" name="corp_q9" value="crm" data-price="15000"><div class="quiz-option-content"><div class="quiz-option-label">(a) CRM (amoCRM, Bitrix24 и др.)</div><div class="quiz-option-meta">+15 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="checkbox" name="corp_q9" value="pay" data-price="10000"><div class="quiz-option-content"><div class="quiz-option-label">(b) Платёжная система или онлайн-запись</div><div class="quiz-option-meta">+10 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="checkbox" name="corp_q9" value="analytics" data-min="5000" data-max="10000"><div class="quiz-option-content"><div class="quiz-option-label">(c) Аналитика, рассылки, формы заявок</div><div class="quiz-option-meta">+5 000–10 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q9_none" value="no" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(d) Нет</div><div class="quiz-option-meta">без доплаты</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q9_none" value="other"><div class="quiz-option-content"><div class="quiz-option-label">(e) Другое</div><textarea class="quiz-textarea" placeholder="Опишите интеграцию"></textarea></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 13 -->
+      <div class="quiz-step" data-step="13">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это влияет на скорость дизайна и единый стиль сайта.</div></div>
+        <div class="quiz-step-title">13. Есть ли фирменные шрифты и цвета бренда?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="corp_q10" value="ready" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) Всё готово (брендбук или гайдлайн)</div><div class="quiz-option-meta">без доплаты</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q10" value="part" data-min="10000" data-max="15000"><div class="quiz-option-content"><div class="quiz-option-label">(b) Частично готово</div><div class="quiz-option-meta">+10 000–15 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q10" value="need" data-min="20000" data-max="30000"><div class="quiz-option-content"><div class="quiz-option-label">(c) Нужно разработать полностью</div><div class="quiz-option-meta">+20 000–30 000 ₽</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 14 -->
+      <div class="quiz-step" data-step="14">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это влияет на сложность реализации и конечную стоимость.</div></div>
+        <div class="quiz-step-title">14. Нужна ли вам кастомная разработка — например, калькулятор, интерактив или модуль нестандартной логики?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="corp_q11" value="no" data-price="0"><div class="quiz-option-content"><div class="quiz-option-label">(a) Нет — стандартный функционал</div><div class="quiz-option-meta">без доплаты</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q11" value="simple" data-min="20000" data-max="50000"><div class="quiz-option-content"><div class="quiz-option-label">(b) Да, нужен простой интерактив</div><div class="quiz-option-meta">+20 000–50 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q11" value="hard" data-min="50000" data-max="120000"><div class="quiz-option-content"><div class="quiz-option-label">(c) Да, нужен сложный модуль</div><div class="quiz-option-meta">+50 000–120 000 ₽</div></div></label>
+          <label class="quiz-option"><input type="radio" name="corp_q11" value="consult" data-min="0" data-max="20000"><div class="quiz-option-content"><div class="quiz-option-label">(d) Пока не решили, нужна консультация</div><div class="quiz-option-meta">+0–20 000 ₽</div></div></label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+`,
+    portal: `
+      <!-- Вопрос 2 -->
+      <div class="quiz-step" data-step="2">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это влияет на структуру проекта, набор функций и подход к дизайну. Выберите основную цель. Детали сможете уточнить позже.</div>
+        </div>
+        <div class="quiz-step-title">2. Какие цели вы планируете решить через сайт?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="q2" value="info_or_services">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Объединить большое количество информации или сервисов</div>
+              <div class="quiz-option-meta">Разделы, базы данных, поиск, фильтры, интеграции.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q2" value="community_project">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Создать масштабный онлайн-проект / сообщество</div>
+              <div class="quiz-option-meta">Регистрация пользователей, личные кабинеты, контент, комментарии, рейтинги.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q2" value="internal_processes">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Организовать внутренние процессы компании</div>
+              <div class="quiz-option-meta">Внутренний портал, база знаний, отчёты, рабочие кабинеты, интеграции с CRM/ERP.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q2" value="monetization">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(d) Монетизация контента или услуг</div>
+              <div class="quiz-option-meta">Платный доступ, подписки, реклама, маркетплейс-модель.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q2" value="brand_portal">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(e) Имиджевый / представительский портал бренда</div>
+              <div class="quiz-option-meta">Крупная структура, медиа-разделы, акцент на контент и дизайн.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q2" value="other">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(f) Другое</div>
+              <div class="quiz-option-meta">У вас нестандартная задача? Опишите её коротко.</div>
+              <textarea class="quiz-textarea" placeholder="Опишите задачу коротко"></textarea>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 3 -->
+      <div class="quiz-step" data-step="3">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это влияет на UX-дизайн, коммуникацию и контент.</div>
+        </div>
+        <div class="quiz-step-title">3. Кто является основной целевой аудиторией вашего сайта?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="b2b"><div class="quiz-option-content"><div class="quiz-option-label">(a) B2B — компании, бизнес-клиенты</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b2c"><div class="quiz-option-content"><div class="quiz-option-label">(b) B2C — частные лица</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b2g"><div class="quiz-option-content"><div class="quiz-option-label">(c) B2G — государственные организации</div></div></label>
+          <label class="quiz-option"><input type="radio" name="q3" value="international"><div class="quiz-option-content"><div class="quiz-option-label">(d) Международная аудитория (несколько стран и языков)</div></div></label>
+          <label class="quiz-option">
+            <input type="radio" name="q3" value="other">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(e) Другое</div>
+              <textarea class="quiz-textarea" placeholder="Опишите вашу аудиторию"></textarea>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 4 -->
+      <div class="quiz-step" data-step="4">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это влияет на качество и стоимость работы.</div>
+        </div>
+        <div class="quiz-step-title">4. Какой ожидаемый срок запуска проекта?</div>
+        <div class="quiz-step-subtitle">Это влияет на итоговую стоимость за счёт коэффициента к базовой цене.</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="q4" value="lt4m" data-deadline-modifier="30">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Менее 3-4 месяца</div>
+              <div class="quiz-option-meta">+30% (ускоренная разработка)</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q4" value="4-6m" data-deadline-modifier="10">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) 4–6 месяца</div>
+              <div class="quiz-option-meta">+10% за скорость работы (стандартная разработка в сжатые сроки)</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q4" value="6-12m" data-deadline-modifier="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) 6–12 месяца</div>
+              <div class="quiz-option-meta">Стандартные сроки</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q4" value="gt12m" data-deadline-modifier="-10">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(d) Более 12-18 месяцев</div>
+              <div class="quiz-option-meta">скидка -10% (поэтапная реализация)</div>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 5 -->
+      <div class="quiz-step" data-step="5">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это помогает подобрать подходящий технологический стек и уровень кастомизации.</div>
+        </div>
+        <div class="quiz-step-title">5. Какой у вас ориентировочный бюджет на разработку?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="q5" value="300-600">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) от 300 000 до 600 000 ₽</div>
+              <div class="quiz-option-meta">Базовые разделы, личный кабинет, простая админка, без сложных интеграций</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q5" value="600-1200">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) от 600 000 до 1 200 000 ₽</div>
+              <div class="quiz-option-meta">Каталоги, фильтры, поиск, роли пользователей, интеграции с CRM, уведомления</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q5" value="1200-2500">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) от 1 200 000 до 2 500 000 ₽</div>
+              <div class="quiz-option-meta">Многоуровневая логика, кастомные модули, API-интеграции, большие базы данных, аналитика</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q5" value="gt2500">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(d) от 2 500 000 ₽ и выше</div>
+              <div class="quiz-option-meta">ERP-модули, BI-системы, сложная архитектура, микро-сервисы, масштабируемость</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q5" value="unknown">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(e) Бюджет пока не определён</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q5" value="other">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(f) Другое</div>
+              <textarea class="quiz-textarea" placeholder="Опишите бюджет или ограничения"></textarea>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 6 -->
+      <div class="quiz-step" data-step="6">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это ускоряет старт проекта и помогает определить визуальные ожидания.</div>
+        </div>
+        <div class="quiz-step-title">6. Есть ли у вас готовые референсы?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="q6" value="yes" data-discount="-20000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Да, прикреплю ссылки</div>
+              <div class="quiz-option-meta">–20 000 ₽ скидка за ускоренный старт</div>
+              <textarea class="quiz-textarea" placeholder="Вставьте ссылки на референсы"></textarea>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q6" value="no" data-discount="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Нет</div>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 7 -->
+      <div class="quiz-step" data-step="7">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это влияет на функциональность, сроки и стоимость поддержки.</div>
+        </div>
+        <div class="quiz-step-title">7. Предпочитаемая платформа для разработки сайта</div>
+
+        <div class="quiz-step-subtitle">Лёгкие платформы (подходят для небольших порталов)</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="q7" value="wp" data-price="150000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) WordPress</div>
+              <div class="quiz-option-meta">+150 000 ₽. Подходит для контентных порталов, каталогов, базовых личных кабинетов.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q7" value="tilda_backend" data-price="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Tilda + кастомный backend</div>
+              <div class="quiz-option-meta">без доплат. Для информационных порталов, медиа-разделов, простых баз контента.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q7" value="webflow" data-price="200000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Webflow</div>
+              <div class="quiz-option-meta">+200 000 ₽. Для стильных медиа и имиджевых порталов.</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="quiz-step-subtitle">Средний уровень сложности (полноценные порталы)</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="q7" value="laravel" data-price="400000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(d) Laravel (PHP)</div>
+              <div class="quiz-option-meta">+400 000 ₽. Подходит для порталов любой сложности, кабинетов, интеграций.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q7" value="django" data-price="500000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(e) Django (Python)</div>
+              <div class="quiz-option-meta">+500 000 ₽. Для образовательных платформ, CRM, аналитических систем.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q7" value="node" data-price="800000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(f) Node.js + React / Vue</div>
+              <div class="quiz-option-meta">+800 000 ₽. Для интерактивных порталов, real-time сервисов, чатов и сложной логики.</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="quiz-step-subtitle">Сложные корпоративные платформы</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="q7" value="bitrix" data-price="1500000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(g) 1C-Битрикс</div>
+              <div class="quiz-option-meta">+1 500 000 ₽. Для корпоративных порталов, интеграций с 1С. (Лицензии: +30 000–300 000 ₽ отдельно.)</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q7" value="sap_oracle_ms" data-price="5000000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(h) SAP / Oracle / Microsoft</div>
+              <div class="quiz-option-meta">+5 000 000 ₽ и выше. Для крупных компаний, ERP-порталов и внутренних систем.</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 8 -->
+      <div class="quiz-step" data-step="8">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это влияет на сложность программирования и время тестирования.</div>
+        </div>
+        <div class="quiz-step-title">8. Какие интеграции нужны вашему порталу?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="checkbox" name="q8_multi" value="crm" data-min="20000" data-max="120000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Интеграция с CRM (AmoCRM, Битрикс24)</div>
+              <div class="quiz-option-meta">20 000–120 000 ₽. Передача заявок, статусов, карточек клиентов. Цена зависит от глубины обмена.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q8_multi" value="erp" data-min="70000" data-max="600000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Интеграция с ERP (1С, SAP)</div>
+              <div class="quiz-option-meta">70 000–600 000 ₽. Синхронизация товаров, заказов, остатков. Сложнее CRM, больше логики.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q8_multi" value="payments" data-min="20000" data-max="120000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Платёжные системы (ЮKassa, CloudPayments)</div>
+              <div class="quiz-option-meta">20 000–120 000 ₽. Оплата, подписки, рекуррентные платежи. Цена растёт с количеством методов.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q8_multi" value="notifications" data-min="10000" data-max="120000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(d) Уведомления (Telegram / WhatsApp / Email)</div>
+              <div class="quiz-option-meta">10 000–120 000 ₽. Оповещения или боты. Простые интеграции — недорого, боты — дороже.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q8_multi" value="marketplaces" data-min="60000" data-max="250000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(e) Маркетплейсы (WB, Ozon)</div>
+              <div class="quiz-option-meta">60 000–250 000 ₽. Обмен товарами, заказами, статусами. API сложные, отсюда цена.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q8_multi" value="external_api" data-min="20000" data-max="150000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(f) Внешние API (карты, логистика и т.п.)</div>
+              <div class="quiz-option-meta">20 000–150 000 ₽. Подключение API и обработка данных. Цена зависит от логики.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q8_multi" value="social_login" data-min="15000" data-max="80000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(g) Авторизация через соцсети</div>
+              <div class="quiz-option-meta">15 000–80 000 ₽. Google/Apple/VK/Telegram. Каждая соцсеть — отдельная интеграция.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q8_multi" value="analytics" data-min="10000" data-max="150000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(h) Аналитика (GA4, Метрика)</div>
+              <div class="quiz-option-meta">10 000–150 000 ₽. Цели, события, воронки. Цена зависит от количества сценариев.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q8_single" value="no" data-price="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(i) Нет</div>
+              <div class="quiz-option-meta">без доплаты</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q8_single" value="other">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(j) Другое</div>
+              <textarea class="quiz-textarea" placeholder="Опишите нужную интеграцию"></textarea>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 9 -->
+      <div class="quiz-step" data-step="9">
+        <div class="quiz-consultant"><div class="quiz-consultant-avatar">i</div><div>Это влияет на архитектуру и бюджет проекта. (Языки с иероглифами считаются отдельно)</div></div>
+        <div class="quiz-step-title">9. Мультиязычность</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="q9" value="ru" data-price="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Только русский язык</div>
+              <div class="quiz-option-meta">без доплаты</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q9" value="add_one" data-price="70000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Дополнительный язык (+1)</div>
+              <div class="quiz-option-meta">+70 000 ₽</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q9" value="other">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Другое</div>
+              <textarea class="quiz-textarea" placeholder="Оставьте комментарий"></textarea>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+<!-- Вопрос 10 -->
+      <div class="quiz-step" data-step="10">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это влияет на сложность и итоговую стоимость.</div>
+        </div>
+        <div class="quiz-step-title">10. Какие кастомные разработки нужны вашему порталу?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="checkbox" name="q10" value="cabinet" data-min="60000" data-max="250000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Личный кабинет пользователей</div>
+              <div class="quiz-option-meta">60 000–250 000 ₽. Профиль, роли, настройки, история действий.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q10" value="calculators" data-min="40000" data-max="200000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Калькуляторы и конфигураторы</div>
+              <div class="quiz-option-meta">40 000–200 000 ₽. Расчёт стоимости, подбор тарифов, конфигурации.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q10" value="catalog_search" data-min="80000" data-max="300000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Каталог + поиск и фильтры</div>
+              <div class="quiz-option-meta">80 000–300 000 ₽. Структура разделов, быстрый поиск, фильтры по параметрам.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q10" value="user_analytics" data-min="70000" data-max="250000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(d) Статистика и аналитика для пользователей</div>
+              <div class="quiz-option-meta">70 000–250 000 ₽. Графики, прогресс, отчёты, показатели.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q10" value="chats_forms" data-min="40000" data-max="220000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(e) Чаты, заявки или внутренние формы</div>
+              <div class="quiz-option-meta">40 000–220 000 ₽. Обращения, диалоги, многошаговые формы, статусы.</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q10" value="none" data-price="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(f) Нет</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="checkbox" name="q10" value="other" data-price="0">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(g) Другое</div>
+              <textarea class="quiz-textarea" placeholder="Опишите нужную разработку"></textarea>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+
+      <!-- Вопрос 11 -->
+      <div class="quiz-step" data-step="11">
+        <div class="quiz-consultant">
+          <div class="quiz-consultant-avatar">i</div>
+          <div>Это влияет на сроки и бюджет проекта.</div>
+        </div>
+        <div class="quiz-step-title">11. Есть ли у вас готовый дизайн?</div>
+        <div class="quiz-options">
+          <label class="quiz-option">
+            <input type="radio" name="q11" value="need_design" data-min="80000" data-max="200000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(a) Нужна разработка дизайна</div>
+              <div class="quiz-option-meta">80 000–200 000 ₽ (диапазон зависит от количества экранов)</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q11" value="partial_design" data-min="30000" data-max="80000">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(b) Есть частично готовый дизайн (надо доработать)</div>
+              <div class="quiz-option-meta">30 000–80 000 ₽ (частичная переработка, адаптация, создание недостающих экранов)</div>
+            </div>
+          </label>
+
+          <label class="quiz-option">
+            <input type="radio" name="q11" value="full_design" data-total-modifier="-20">
+            <div class="quiz-option-content">
+              <div class="quiz-option-label">(c) Есть полностью готовый дизайн — только верстка</div>
+              <div class="quiz-option-meta">Скидка 20%</div>
+            </div>
+          </label>
+        </div>
+        <div class="quiz-error"></div>
+      </div>
+    `
+  };
+
+
+<!-- конец ветки вопросов -->
+
+
+  // === ДОБАВЛЕНИЕ ВЕТОК И ФИНАЛЬНОГО ШАГА ===
+ function switchQuestionBranch() {
+  const siteType = getSelected("q1")?.value;
+  const container = document.getElementById("quiz-steps-container");
+  const step1 = container.querySelector('.quiz-step[data-step="1"]');
+  const branchHTML = branches[siteType] || "";
+
+  container.querySelectorAll(".quiz-step").forEach((step, index) => {
+    if (index > 0) step.remove();
+  });
+
+  if (branchHTML && step1) {
+    step1.insertAdjacentHTML("afterend", branchHTML);
+  }
+
+  const lastStep = container.querySelector(".quiz-step:last-of-type");
+  if (lastStep) {
+    const nextIndex = parseInt(lastStep.dataset.step) + 1;
+    const contactHTML = contactStep.replace('data-step="999"', `data-step="${nextIndex}"`);
+    lastStep.insertAdjacentHTML("afterend", contactHTML);
+  }
+
+  stepElements = container.querySelectorAll(".quiz-step");
+  totalSteps = stepElements.length;
+
+  showStep(2);
+  calculateRange();
+}
+
+
+
+
+  // === СЛУШАЕМ ВЫБОР ТИПА САЙТА ===
+  document.querySelectorAll('input[name="q1"]').forEach(radio => {
+    radio.addEventListener("change", () => {
+      calculateRange();
+      switchQuestionBranch();
+    });
+  });
+  // === ЛОГИКА ДЛЯ ШАГА 8 ===
+document.addEventListener("change", (e) => {
+  const step8 = e.target.closest('.quiz-step[data-step="8"]');
+  if (!step8) return;
+
+  const name = e.target.name;
+
+  if (name === "q8_single" && (e.target.value === "no" || e.target.value === "other")) {
+    step8.querySelectorAll('input[name="q8_multi"]').forEach(cb => cb.checked = false);
+  }
+
+  if (name === "q8_multi") {
+    const anyChecked = step8.querySelectorAll('input[name="q8_multi"]:checked').length > 0;
+    if (anyChecked) {
+      step8.querySelectorAll('input[name="q8_single"]').forEach(rb => rb.checked = false);
+    }
+  }
+
+  calculateRange();
+});
+
+// === ЛОГИКА ДЛЯ ИНТЕГРАЦИЙ (Интернет-магазин, шаг 6) ===
+document.addEventListener("change", (e) => {
+  const step6 = e.target.closest('.quiz-step[data-step="6"]');
+  if (!step6) return;
+
+  const name = e.target.name;
+
+  if (name === "shop_int_single") {
+    // Если выбрали "Интеграции не нужны" или "Другое" — сбрасываем чекбоксы
+    step6.querySelectorAll('input[name="shop_int_multi"]').forEach(cb => cb.checked = false);
+  }
+
+  if (name === "shop_int_multi") {
+    const anyChecked = step6.querySelectorAll('input[name="shop_int_multi"]:checked').length > 0;
+    if (anyChecked) {
+      step6.querySelectorAll('input[name="shop_int_single"]').forEach(rb => rb.checked = false);
+    }
+  }
+
+  calculateRange();
+});
+// === ЛОГИКА КНОПОК ПРЕДПОЧТИТЕЛЬНОГО СПОСОБА СВЯЗИ ===
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".quiz-contact-button");
+  if (!btn) return;
+
+  const step = btn.closest(".quiz-step");
+  if (!step) return;
+
+  step.querySelectorAll(".quiz-contact-button").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+
+  const extraWrapper = step.querySelector("#contact-extra-field");
+  const extraLabel = step.querySelector("#contact-extra-label");
+  const extraInput = step.querySelector("#contact-extra-input");
+
+  if (!extraWrapper || !extraLabel || !extraInput) return;
+
+  const type = btn.dataset.contactType;
+
+  if (type === "telegram") {
+    extraWrapper.style.display = "block";
+    extraLabel.textContent = "Ник в Telegram";
+    extraInput.placeholder = "@username";
+  } else if (type === "whatsapp") {
+    extraWrapper.style.display = "block";
+    extraLabel.textContent = "Номер WhatsApp";
+    extraInput.placeholder = "+7...";
+  } else if (type === "phone") {
+    extraWrapper.style.display = "none";
+    extraInput.value = "";
+  } else {
+    extraWrapper.style.display = "none";
+  }
+});
+
+  
+  // === WhatsApp: переключатель номера (использовать основной или другой) ===
+  document.addEventListener("change", (e) => {
+    const t = e.target;
+    if (t && t.name === "wa_source") {
+      const step = t.closest(".quiz-step");
+      if (!step) return;
+
+      const waCustom = step.querySelector("#whatsapp-custom-input");
+      const waError = step.querySelector("#whatsapp-error");
+
+      if (waError) waError.style.display = "none";
+
+      if (t.value === "custom") {
+        if (waCustom) waCustom.style.display = "block";
+      } else {
+        if (waCustom) {
+          waCustom.value = "";
+          waCustom.style.display = "none";
+        }
+      }
+    }
+  });
+
+  // === Telegram: только латиница + подсказка при кириллице ===
+  document.addEventListener("input", (e) => {
+    const field = e.target;
+    if (!field || field.id !== "contact-extra-input") return;
+
+    const step = field.closest(".quiz-step");
+    if (!step) return;
+
+    const activeBtn = step.querySelector(".quiz-contact-button.active");
+    const type = activeBtn ? activeBtn.dataset.contactType : "";
+    if (type !== "telegram") return;
+
+    const raw = field.value || "";
+    const tgHint = step.querySelector("#telegram-lang-hint");
+
+    const hasCyr = /[А-Яа-яЁё]/.test(raw);
+    if (tgHint) tgHint.style.display = hasCyr ? "block" : "none";
+
+    // санитизация: допускаем @ только в начале, далее A-Z a-z 0-9 _
+    let v = raw;
+
+    // оставляем только допустимые символы
+    // сначала убираем пробелы
+    v = v.replace(/\s+/g, "");
+
+    // если есть @ не в начале — удаляем
+    if (v.includes("@")) {
+      v = v[0] === "@" ? ("@" + v.slice(1).replace(/@/g, "")) : v.replace(/@/g, "");
+    }
+
+    // удаляем всё кроме латиницы/цифр/_
+    if (v[0] === "@") {
+      v = "@" + v.slice(1).replace(/[^a-zA-Z0-9_]/g, "");
+    } else {
+      v = v.replace(/[^a-zA-Z0-9_]/g, "");
+    }
+
+    if (field.value !== v) field.value = v;
+  });
+
+// === ОТПРАВКА ЗАЯВКИ ===
+  const submitBtn = document.getElementById("quiz-submit");
+  if (submitBtn) {
+    submitBtn.addEventListener("click", handleSubmit);
+  }
+
+  function handleSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+    const scrollY = window.scrollY;
+
+    const lastStep = stepElements[stepElements.length - 1]; // последний шаг = контакты
+    const errorBox = lastStep.querySelector("#quiz-error-contact");
+
+    const nameInput   = lastStep.querySelector("#contact-name");
+    const phoneInput  = lastStep.querySelector("#contact-phone");
+    const emailInput  = lastStep.querySelector("#contact-email");
+    const companyInput = lastStep.querySelector("#contact-company");
+
+    const privacyCheckbox = lastStep.querySelector("#privacy-checkbox");
+
+    const activeContactBtn = lastStep.querySelector(".quiz-contact-button.active");
+    const contactType = activeContactBtn ? activeContactBtn.dataset.contactType : "";
+
+    const waField = lastStep.querySelector("#whatsapp-field");
+    const waSourceMain = lastStep.querySelector('input[name="wa_source"][value="main"]');
+    const waSourceCustom = lastStep.querySelector('input[name="wa_source"][value="custom"]');
+    const waCustomInput = lastStep.querySelector("#whatsapp-custom-input");
+    const waError = lastStep.querySelector("#whatsapp-error");
+
+    // Telegram: ник обязателен и только латиница/цифры/_
+    if (contactType === "telegram") {
+      const rawNick = (contactExtraInput ? contactExtraInput.value.trim() : "");
+      const nick = rawNick.startsWith("@") ? rawNick.slice(1) : rawNick;
+
+      const isValidNick = /^[a-zA-Z0-9_]{5,32}$/.test(nick);
+      if (!isValidNick) {
+        errorBox.textContent = "Укажите корректный ник Telegram (только латиница, цифры и _; 5–32 символа).";
+        errorBox.classList.add("visible");
+        return;
+      }
+    }
+
+    // WhatsApp: выбрать основной или указать другой (если выбран другой — он обязателен)
+    if (contactType === "whatsapp") {
+      if (waError) waError.style.display = "none";
+
+      const useCustom = waSourceCustom && waSourceCustom.checked;
+      if (useCustom) {
+        const waNum = waCustomInput ? waCustomInput.value.trim() : "";
+        if (!waNum) {
+          if (waError) waError.style.display = "block";
+          errorBox.textContent = "Пожалуйста, укажите номер WhatsApp.";
+          errorBox.classList.add("visible");
+          return;
+        }
+      } else {
+        const basePhone = phoneInput ? phoneInput.value.trim() : "";
+        if (!basePhone) {
+          if (waError) waError.style.display = "block";
+          errorBox.textContent = "Укажите телефон или выберите «Указать другой номер» для WhatsApp.";
+          errorBox.classList.add("visible");
+          return;
+        }
+      }
+    }
+    const contactExtraInput = lastStep.querySelector("#contact-extra-input");
+
+    if (!nameInput.value.trim()) {
+      errorBox.textContent = "Пожалуйста, укажите ваше имя.";
+      errorBox.classList.add("visible");
+      return;
+    }
+
+    if (!phoneInput.value.trim() && !emailInput.value.trim()) {
+      errorBox.textContent = "Укажите телефон или email для связи.";
+      errorBox.classList.add("visible");
+      return;
+    }
+
+    if (!privacyCheckbox.checked) {
+      errorBox.textContent = "Необходимо согласиться с политикой конфиденциальности.";
+      errorBox.classList.add("visible");
+      return;
+    }
+
+    errorBox.textContent = "";
+    errorBox.classList.remove("visible");
+
+    // --- Сбор всех ответов квиза ---
+    let answersText = "";
+    document.querySelectorAll(".quiz-step").forEach(step => {
+      const titleEl = step.querySelector(".quiz-step-title");
+      if (!titleEl) return;
+
+      const title = titleEl.textContent.trim();
+
+      if (step.contains(nameInput)) return;
+
+      const selectedInputs = step.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked');
+      if (selectedInputs.length === 0) return;
+
+      const answers = [];
+      selectedInputs.forEach(input => {
+        const option = input.closest(".quiz-option");
+        if (!option) return;
+
+        const labelEl = option.querySelector(".quiz-option-label");
+        const textField = option.querySelector("textarea, input[type='text']");
+
+        let answerLine = labelEl ? labelEl.textContent.trim() : "";
+
+        if (textField && textField.value.trim()) {
+          answerLine += " — " + textField.value.trim();
+        }
+
+        answers.push(answerLine);
+      });
+
+      if (answers.length > 0) {
+        answersText += title + ":\n" + " - " + answers.join("\n - ") + "\n\n";
+      }
+    });
+
+    // --- Цена / диапазон ---
+    const priceMinEl = document.getElementById("quiz-price-min");
+    const priceMaxEl = document.getElementById("quiz-price-max");
+    const basePriceEl = document.getElementById("quiz-base-price");
+    const finalNoteEl = document.getElementById("quiz-final-note");
+
+    const priceMinText = priceMinEl ? priceMinEl.textContent.trim() : "";
+    const priceMaxText = priceMaxEl ? priceMaxEl.textContent.replace("–", "").trim() : "";
+    const basePriceText = basePriceEl ? basePriceEl.textContent.trim() : "";
+    const finalNoteText = (finalNoteEl && finalNoteEl.style.display !== "none")
+      ? " (с учётом выбранных скидок)"
+      : "";
+
+    let priceBlockText = "";
+    if (basePriceText) {
+      priceBlockText += "Базовая сумма по ответам: " + basePriceText + "\n";
+    }
+    if (priceMinText && priceMaxText) {
+      priceBlockText += "Итоговый диапазон: " + priceMinText + " – " + priceMaxText + finalNoteText + "\n";
+    }
+
+    // --- Контакты в текст ---
+        let contactsText = "";
+    contactsText += "Имя: " + nameInput.value.trim() + "\n";
+    if (companyInput && companyInput.value.trim()) contactsText += "Компания: " + companyInput.value.trim() + "\n";
+    if (phoneInput && phoneInput.value.trim()) contactsText += "Телефон: " + phoneInput.value.trim() + "\n";
+    if (emailInput && emailInput.value.trim()) contactsText += "Email: " + emailInput.value.trim() + "\n";
+
+    if (contactType) {
+      const typeLabel = (contactType === "telegram") ? "Telegram" : (contactType === "whatsapp") ? "WhatsApp" : "Звонок";
+      contactsText += "Способ связи: " + typeLabel + "\n";
+
+      if (contactType === "telegram") {
+        const rawNick = contactExtraInput ? contactExtraInput.value.trim() : "";
+        contactsText += "Ник Telegram: " + rawNick + "\n";
+      }
+
+      if (contactType === "whatsapp") {
+        const useCustom = waSourceCustom && waSourceCustom.checked;
+        const waNum = useCustom
+          ? (waCustomInput ? waCustomInput.value.trim() : "")
+          : (phoneInput ? phoneInput.value.trim() : "");
+        contactsText += "Номер WhatsApp: " + waNum + "\n";
+      }
+    }
+
+const finalText =
+      "Новая заявка с квиза:\n\n" +
+      priceBlockText + "\n" +
+      "Ответы:\n" + answersText +
+      "Контакты:\n" + contactsText;
+
+    // --- Без отправки в Тильду ---
+    if (answersStore) answersStore.value = finalText;
+
+    // --- ОТПРАВКА В TELEGRAM (оставлено) ---
+    const TELEGRAM_BOT_TOKEN = "8269643431:AAHo2OKi4aBZNzBLesWyx86nWvCiHQMEukM";
+    const TELEGRAM_CHAT_ID   = "7509132502";
+
+    fetch("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: finalText,
+        parse_mode: "HTML"
+      })
+    }).catch(err => {
+      console.error("Ошибка отправки в Telegram:", err);
+    });
+
+    // --- Показываем кастомное "Заявка принята" без скролла и без влияния Тильды ---
+    const main = document.getElementById("quiz-main");
+    if (main) {
+      const h = main.offsetHeight;
+      if (h) main.style.minHeight = h + "px";
+      main.classList.add("quiz-sent");
+      const overlay = document.getElementById("quiz-success-overlay");
+      if (overlay) overlay.setAttribute("aria-hidden", "false");
+    }
+
+    // сохраняем позицию страницы
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollY);
+    });
+}
+
+  // === ИНИЦИАЛИЗАЦИЯ ===
+  showStep(1);
+  calculateRange();
+
+
+  // === Сброс квиза (кнопка "Заполнить ещё раз") ===
+  const resetBtn = document.getElementById("quiz-reset");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      window.location.reload();
+    });
+  }
+
+
+})();
+
+
+// === АВТОВЫБОР ВАРИАНТА ПРИ ФОКУСЕ НА ПОЛЕ ===
+document.addEventListener("focusin", (e) => {
+  const field = e.target;
+  if (field.matches("textarea, input[type='text']")) {
+    const option = field.closest(".quiz-option");
+    if (option) {
+      const radio = option.querySelector('input[type="radio"]');
+      if (radio && !radio.checked) {
+        radio.checked = true;
+        radio.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+  }
+});
+
+// Также если пользователь начинает ввод текста
+document.addEventListener("input", (e) => {
+  const field = e.target;
+  if (field.matches("textarea, input[type='text']")) {
+    const option = field.closest(".quiz-option");
+    if (option) {
+      const radio = option.querySelector('input[type="radio"]');
+      if (radio && !radio.checked) {
+        radio.checked = true;
+        radio.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+  }
+});
+
+
+  </script>
+
+</body>
+</html>

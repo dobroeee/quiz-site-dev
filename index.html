@@ -3356,70 +3356,35 @@ document.addEventListener("input", (e) => {
 
 
 <script>
-/* TILDA_BLOCK_AUTOFIT */
+/* IFRAME_AUTO_HEIGHT */
 (function () {
-  function px(n) { return Math.max(0, Math.ceil(Number(n) || 0)); }
-
-  function fitTildaBlock() {
-    var quiz = document.querySelector('.quiz-wrapper');
-    if (!quiz) return;
-
-    // Find the closest ZeroBlock artboard (if any)
-    var artboard = quiz.closest('.t396__artboard');
-    if (!artboard) return;
-
-    // Compute height based on the actual visible box, not scrollHeight.
-    // This avoids "max height" artifacts when content was taller on other steps.
-    var quizRect = quiz.getBoundingClientRect();
-    var artRect = artboard.getBoundingClientRect();
-
-    // Include the quiz element's bottom margin if present
-    var cs = window.getComputedStyle(quiz);
-    var mb = parseFloat(cs.marginBottom) || 0;
-
-    var desired = px((quizRect.bottom - artRect.top) + mb);
-
-    // Safety floor: never go below current minimal visible height
-    desired = Math.max(desired, 200);
-
-    // Apply to ZeroBlock wrappers
-    artboard.style.height = desired + 'px';
-    artboard.setAttribute('data-artboard-height', String(desired));
-
-    // Carrier/filter are used for background and should match
-    var rec = quiz.closest('.t-rec');
-    if (rec) {
-      rec.style.height = desired + 'px';
-      var carrier = rec.querySelector('.t396__carrier');
-      if (carrier) carrier.style.height = desired + 'px';
-      var filter = rec.querySelector('.t396__filter');
-      if (filter) filter.style.height = desired + 'px';
-    }
+  function sendHeight() {
+    try {
+      var h = Math.ceil(document.documentElement.scrollHeight);
+      window.parent && window.parent.postMessage({ type: "quizHeight", height: h }, "*");
+    } catch (e) {}
   }
 
-  function scheduleFit() {
-    // Let DOM settle (show/hide, validation messages, thanks screen)
-    setTimeout(fitTildaBlock, 50);
-  }
+  // initial + reactive
+  window.addEventListener("load", sendHeight);
+  window.addEventListener("resize", sendHeight);
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', scheduleFit);
-  } else {
-    scheduleFit();
-  }
-  window.addEventListener('load', scheduleFit);
-  window.addEventListener('resize', scheduleFit);
-
-  // Update when quiz UI changes
-  document.addEventListener('change', scheduleFit, true);
-  document.addEventListener('input', scheduleFit, true);
-  document.addEventListener('click', scheduleFit, true);
+  // React to UI changes (steps, extra fields, thanks screen, errors)
+  document.addEventListener("input", sendHeight, true);
+  document.addEventListener("change", sendHeight, true);
+  document.addEventListener("click", sendHeight, true);
 
   if (window.ResizeObserver) {
-    var ro = new ResizeObserver(scheduleFit);
-    var quizEl = document.querySelector('.quiz-wrapper');
-    if (quizEl) ro.observe(quizEl);
+    var ro = new ResizeObserver(function () { sendHeight(); });
+    ro.observe(document.documentElement);
+  } else {
+    // fallback polling
+    setInterval(sendHeight, 300);
   }
+
+  // small delayed sends (for animations / delayed DOM updates)
+  setTimeout(sendHeight, 50);
+  setTimeout(sendHeight, 300);
 })();
 </script>
 

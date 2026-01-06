@@ -485,7 +485,6 @@
   transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
-
   /* === Кастомный экран "Заявка принята" (без изменения размеров контейнера) === */
   .quiz-main { position: relative; }
   .quiz-success-overlay {
@@ -550,7 +549,6 @@
   #quiz-main.quiz-sent .quiz-nav-hint {
     visibility: hidden;
   }
-
 
 /* force all field-level hints/errors off: use only the main error block */
 #quiz-error-contact-method,
@@ -702,7 +700,6 @@
   </div>
 </aside>
 
-
     </div>
   </div>
 
@@ -713,12 +710,10 @@
   
   (function() {
 
-
   // === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
   let currentStep = 1;
   let stepElements = document.querySelectorAll(".quiz-step");
   let totalSteps = stepElements.length;
-
 
   // Контактная форма: чтобы обновлять ошибки «на лету» после первой попытки отправки
   let contactSubmitAttempted = false;
@@ -967,9 +962,6 @@ function calculateRange() {
   }
 }
 
-
-
-
 // === ЛЕНДИНГ: ВОПРОС 8 (интеграции) — чекбоксы + радио (взаимоисключение) ===
 document.addEventListener("change", (e) => {
   const el = e.target;
@@ -997,7 +989,6 @@ document.addEventListener("change", (e) => {
     return;
   }
 });
-
 
 // === ЛОГИКА ВЫБОРА СПОСОБА СВЯЗИ ===
 document.addEventListener("click", (e) => {
@@ -1072,8 +1063,6 @@ document.addEventListener("click", (e) => {
   }
 });
 
-
-
 // === ОТОБРАЖЕНИЕ ШАГА ===
 function showStep(step) {
   currentStep = step;
@@ -1143,7 +1132,6 @@ function updateNavButtons() {
   }
 }
 
-
 // === НАВИГАЦИЯ ===
 function handleNext() {
   if (!validateStep()) return;
@@ -1164,7 +1152,6 @@ btnPrev.addEventListener("click", handlePrev);
 
   // === Хранилище данных заявки (без отправки в Тильду) ===
   const answersStore = document.getElementById("quiz-answers-store");
-
 
 // === АВТОМАТИЧЕСКИЙ ПЕРЕХОД ===
 document.addEventListener("change", (e) => {
@@ -1189,7 +1176,6 @@ document.addEventListener("change", (e) => {
 
   setTimeout(() => handleNext(), 300);
 });
-
 
   // === ОБЩИЙ ФИНАЛЬНЫЙ ШАГ (контакты, старый вариант) ===
 const contactStep = `
@@ -1274,7 +1260,6 @@ const contactStep = `
       <div id="whatsapp-error" class="quiz-inline-error">Введите номер для WhatsApp.</div>
     </div>
 
-
     <label class="quiz-privacy" for="privacy-checkbox" style="margin-top:16px; font-size:12.5px; color:#374151; display:flex; gap:8px; align-items:flex-start; cursor:pointer;">
   <input type="checkbox" id="privacy-checkbox" required style="margin-top:2px;">
   <span>Я согласен(на) с условиями обработки персональных данных и политикой конфиденциальности.</span>
@@ -1285,8 +1270,6 @@ const contactStep = `
     
   </div>
 `;
-
-
 
    // === ВЕТКИ ВОПРОСОВ ===
   const branches = {
@@ -2762,9 +2745,7 @@ const contactStep = `
     `
   };
 
-
 <!-- конец ветки вопросов -->
-
 
   // === ДОБАВЛЕНИЕ ВЕТОК И ФИНАЛЬНОГО ШАГА ===
  function switchQuestionBranch() {
@@ -2794,9 +2775,6 @@ const contactStep = `
   showStep(2);
   calculateRange();
 }
-
-
-
 
   // === СЛУШАЕМ ВЫБОР ТИПА САЙТА ===
   document.querySelectorAll('input[name="q1"]').forEach(radio => {
@@ -2957,7 +2935,6 @@ document.addEventListener("click", (e) => {
     if (field.value !== v) field.value = v;
   });
 
-
   // --- helpers: stable contact step + active contact type ---
   function getContactStepEl() {
     return document.querySelector('.quiz-step[data-step="contact"]')
@@ -2992,7 +2969,6 @@ document.addEventListener("click", (e) => {
       el.style.outlineOffset = "";
     }
   }
-
 
   // --- validation: contact step (all fields required except company) ---
   function validateContactStep(stepEl, show) {
@@ -3150,7 +3126,6 @@ document.addEventListener("click", (e) => {
     if (!step || !step.contains(e.target)) return;
     validateContactStep(step, true);
   });
-
 
   function ensureInlineHint(id, afterEl, text) {
     let el = document.getElementById(id);
@@ -3333,7 +3308,6 @@ const finalText =
   showStep(1);
   calculateRange();
 
-
   // === Сброс квиза (кнопка "Заполнить ещё раз") ===
   const resetBtn = document.getElementById("quiz-reset");
   if (resetBtn) {
@@ -3343,9 +3317,7 @@ const finalText =
     });
   }
 
-
 })();
-
 
 // === АВТОВЫБОР ВАРИАНТА ПРИ ФОКУСЕ НА ПОЛЕ ===
 document.addEventListener("focusin", (e) => {
@@ -3377,195 +3349,10 @@ document.addEventListener("input", (e) => {
   }
 });
 
+  </script>
 
-  </script><svg class="ink-icon" xmlns="http://www.w3.org/2000/svg" version="1.1" width="800" aria-hidden="true">
-  <defs>
-    <filter id="goo">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-      <feColorMatrix in="blur" mode="matrix"
-        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 35 -15" result="goo" />
-      <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
-    </filter>
-  </defs>
-</svg>
-
-<div id="cursor" class="Cursor" aria-hidden="true"></div>
-
-<style>
-  .ink-icon { display: none; }
-
-  .Cursor {
-    pointer-events: none;
-    position: fixed;
-    display: block;
-    border-radius: 0;
-    transform-origin: center center;
-    top: 0;
-    left: 0;
-    z-index: 999999;
-    filter: url("#goo");
-    mix-blend-mode: difference;
-  }
-  .Cursor span {
-    position: absolute;
-    display: block;
-    width: 26px;
-    height: 26px;
-    border-radius: 20px;
-    background-color: #fff;
-    transform-origin: center center;
-    transform: translate(-50%, -50%);
-  }
-
-  @media screen and (max-width: 480px) {
-    .Cursor { display: none; }
-  }
-</style>
-
-<script>
-(function () {
-  function _defineProperty(obj, key, value) {
-    if (key in obj) {
-      Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true });
-    } else {
-      obj[key] = value;
-    }
-    return obj;
-  }
-
-  var cursor = document.getElementById("cursor");
-  if (!cursor) return;
-
-  var amount = 20;
-  var sineDots = Math.floor(amount * 0.3);
-  var width = 26;
-  var idleTimeout = 150;
-
-  var lastFrame = 0;
-  var mousePosition = { x: 0, y: 0 };
-  var dots = [];
-  var timeoutID;
-  var idle = false;
-
-  // If GSAP didn't load for some reason, avoid breaking the page
-  var hasGSAP = (typeof window.TweenMax !== "undefined");
-
-  function Dot(index) {
-    if (index === void 0) index = 0;
-    this.index = index;
-    this.anglespeed = 0.05;
-    this.x = 0;
-    this.y = 0;
-    this.scale = 1 - 0.05 * index;
-    this.range = width / 2 - width / 2 * this.scale + 2;
-    this.limit = width * 0.75 * this.scale;
-    this.element = document.createElement("span");
-    if (hasGSAP) {
-      TweenMax.set(this.element, { scale: this.scale });
-    } else {
-      this.element.style.transform = "translate(-50%, -50%) scale(" + this.scale + ")";
-    }
-    cursor.appendChild(this.element);
-  }
-
-  Dot.prototype.lock = function () {
-    this.lockX = this.x;
-    this.lockY = this.y;
-    this.angleX = Math.PI * 2 * Math.random();
-    this.angleY = Math.PI * 2 * Math.random();
-  };
-
-  Dot.prototype.draw = function () {
-    if (!idle || this.index <= sineDots) {
-      if (hasGSAP) TweenMax.set(this.element, { x: this.x, y: this.y });
-      else this.element.style.transform = "translate(" + (this.x) + "px," + (this.y) + "px)";
-    } else {
-      this.angleX += this.anglespeed;
-      this.angleY += this.anglespeed;
-      this.y = this.lockY + Math.sin(this.angleY) * this.range;
-      this.x = this.lockX + Math.sin(this.angleX) * this.range;
-      if (hasGSAP) TweenMax.set(this.element, { x: this.x, y: this.y });
-      else this.element.style.transform = "translate(" + (this.x) + "px," + (this.y) + "px)";
-    }
-  };
-
-  function startIdleTimer() {
-    timeoutID = setTimeout(goInactive, idleTimeout);
-    idle = false;
-  }
-
-  function resetIdleTimer() {
-    clearTimeout(timeoutID);
-    startIdleTimer();
-  }
-
-  function goInactive() {
-    idle = true;
-    for (var i = 0; i < dots.length; i++) dots[i].lock();
-  }
-
-  function buildDots() {
-    for (var i = 0; i < amount; i++) dots.push(new Dot(i));
-  }
-
-  function onMouseMove(event) {
-    mousePosition.x = event.clientX - width / 2;
-    mousePosition.y = event.clientY - width / 2;
-    resetIdleTimer();
-  }
-
-  function onTouchMove(event) {
-    if (!event || !event.touches || !event.touches[0]) return;
-    mousePosition.x = event.touches[0].clientX - width / 2;
-    mousePosition.y = event.touches[0].clientY - width / 2;
-    resetIdleTimer();
-  }
-
-  function positionCursor() {
-    var x = mousePosition.x;
-    var y = mousePosition.y;
-
-    for (var i = 0; i < dots.length; i++) {
-      var dot = dots[i];
-      var nextDot = dots[i + 1] || dots[0];
-
-      dot.x = x;
-      dot.y = y;
-      dot.draw();
-
-      if (!idle || i <= sineDots) {
-        var dx = (nextDot.x - dot.x) * 0.35;
-        var dy = (nextDot.y - dot.y) * 0.35;
-        x += dx;
-        y += dy;
-      }
-    }
-  }
-
-  function render(timestamp) {
-    // requestAnimationFrame passes a high-res timestamp
-    lastFrame = timestamp;
-    positionCursor();
-    requestAnimationFrame(render);
-  }
-
-  function init() {
-    window.addEventListener("mousemove", onMouseMove, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
-    lastFrame = performance.now();
-    buildDots();
-    startIdleTimer();
-    requestAnimationFrame(render);
-  }
-
-  // Wait until DOM is ready so #cursor exists and quiz is rendered
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
-})();
-</script>
+<!-- Чернильный курсор (ink cursor) -->
+<!-- https://mt-webdesign.ru/inkcursor -->
 
 </body>
 </html>

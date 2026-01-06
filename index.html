@@ -20,7 +20,7 @@
 
   .quiz-wrapper {
     max-width: 1200px;
-    margin: 40px auto;
+    margin: 24px auto;
     padding: 0 16px;
   }
 
@@ -544,10 +544,16 @@
   }
   .quiz-inline-radio input { margin-top: 2px; }
   #quiz-main.quiz-sent #quiz-success-overlay { display: flex; }
+
+  #quiz-main.quiz-sent #quiz-success-overlay {
+    position: relative;
+    inset: auto;
+  }
+
   #quiz-main.quiz-sent #quiz-steps-container,
   #quiz-main.quiz-sent .quiz-nav,
   #quiz-main.quiz-sent .quiz-nav-hint {
-    visibility: hidden;
+    display: none;
   }
 
 /* force all field-level hints/errors off: use only the main error block */
@@ -3292,11 +3298,13 @@ const finalText =
     const main = document.getElementById("quiz-main");
     if (main) {
       const h = main.offsetHeight;
-      if (h) main.style.minHeight = h + "px";
-      main.classList.add("quiz-sent");
+      if (h) main.style.minHeight = h + "px";main.classList.add("quiz-sent");
       const overlay = document.getElementById("quiz-success-overlay");
       if (overlay) overlay.setAttribute("aria-hidden", "false");
-    }
+
+      // убираем фиксацию высоты, чтобы не оставалось пустого пространства снизу
+      setTimeout(() => { main.style.minHeight = ""; }, 50);
+}
 
     // сохраняем позицию страницы
     requestAnimationFrame(() => {

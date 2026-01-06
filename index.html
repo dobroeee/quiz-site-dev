@@ -20,7 +20,7 @@
 
   .quiz-wrapper {
     max-width: 1200px;
-    margin: 40px auto 0;
+    margin: 40px auto;
     padding: 0 16px;
   }
 
@@ -3291,6 +3291,8 @@ const finalText =
     // --- Показываем кастомное "Заявка принята" без скролла и без влияния Тильды ---
     const main = document.getElementById("quiz-main");
     if (main) {
+      const h = main.offsetHeight;
+      if (h) main.style.minHeight = h + "px";
       main.classList.add("quiz-sent");
       const overlay = document.getElementById("quiz-success-overlay");
       if (overlay) overlay.setAttribute("aria-hidden", "false");
@@ -3351,6 +3353,63 @@ document.addEventListener("input", (e) => {
 
 <!-- Чернильный курсор (ink cursor) -->
 <!-- https://mt-webdesign.ru/inkcursor -->
+
+
+<script>
+/* TILDA_BLOCK_AUTOFIT */
+(function () {
+  function fitTildaBlock() {
+    var quiz = document.querySelector('.quiz-wrapper');
+    if (!quiz) return;
+
+    // Actual height of quiz content
+    var h = Math.ceil(quiz.scrollHeight);
+
+    // If quiz is inside Tilda ZeroBlock (t396), adjust artboard & related wrappers
+    var artboard = quiz.closest('.t396__artboard');
+    if (artboard) {
+      artboard.style.height = h + 'px';
+      artboard.setAttribute('data-artboard-height', String(h));
+    }
+
+    // Some templates rely on carrier/filter heights too
+    var rec = quiz.closest('.t-rec');
+    if (rec) {
+      rec.style.height = h + 'px';
+      var carrier = rec.querySelector('.t396__carrier');
+      if (carrier) carrier.style.height = h + 'px';
+      var filter = rec.querySelector('.t396__filter');
+      if (filter) filter.style.height = h + 'px';
+    }
+  }
+
+  function scheduleFit() {
+    // small delay so DOM updates (show/hide fields) are applied
+    setTimeout(fitTildaBlock, 30);
+  }
+
+  // Initial
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', scheduleFit);
+  } else {
+    scheduleFit();
+  }
+  window.addEventListener('load', scheduleFit);
+  window.addEventListener('resize', scheduleFit);
+
+  // React to quiz changes
+  document.addEventListener('change', scheduleFit, true);
+  document.addEventListener('input', scheduleFit, true);
+  document.addEventListener('click', scheduleFit, true);
+
+  // Best: observe size changes
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(scheduleFit);
+    var quizEl = document.querySelector('.quiz-wrapper');
+    if (quizEl) ro.observe(quizEl);
+  }
+})();
+</script>
 
 </body>
 </html>

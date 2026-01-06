@@ -551,6 +551,18 @@
     visibility: hidden;
   }
 
+
+/* force all field-level hints/errors off: use only the main error block */
+#quiz-error-contact-method,
+#telegram-required-hint,
+#whatsapp-error-hint,
+.quiz-field-error {
+  display: none !important;
+}
+
+/* Telegram кириллица: скрыто по умолчанию, но может показываться скриптом */
+#telegram-lang-hint { display: none; }
+
 </style>
 
 </head>
@@ -707,6 +719,9 @@
   let stepElements = document.querySelectorAll(".quiz-step");
   let totalSteps = stepElements.length;
 
+
+  // Контактная форма: чтобы обновлять ошибки «на лету» после первой попытки отправки
+  let contactSubmitAttempted = false;
   const progressText = document.getElementById("quiz-progress-text");
   const progressFill = document.getElementById("quiz-progress-fill");
   const btnPrev = document.getElementById("quiz-prev");
@@ -1001,6 +1016,7 @@ document.addEventListener("click", (e) => {
   const label = document.getElementById("contact-extra-label");
   const input = document.getElementById("contact-extra-input");
   const tgHint = document.getElementById("telegram-lang-hint");
+  const tgReq = ensureInlineHint("telegram-required-hint", input, "Укажите ник Telegram (например, @username).");
 
   const waField = document.getElementById("whatsapp-field");
   const waCustom = document.getElementById("whatsapp-custom-input");
@@ -1008,10 +1024,13 @@ document.addEventListener("click", (e) => {
   const waMain = document.querySelector('input[name="wa_source"][value="main"]');
   const waCustomRadio = document.querySelector('input[name="wa_source"][value="custom"]');
 
-  if (tgHint) tgHint.style.display = "none";
-  if (waError) waError.style.display = "none";
+  /* tgHint disabled */
+  /* tgReq hint disabled */
+  /* waError hint disabled */
 
   if (type === "telegram") {
+    /* tgReq hint disabled */
+    /* tgReq hint disabled */
     if (label) label.textContent = "Ник в Telegram";
     if (input) input.placeholder = "@username";
     if (extraField) extraField.style.display = "block";
@@ -1044,6 +1063,12 @@ document.addEventListener("click", (e) => {
   } else {
     if (extraField) extraField.style.display = "none";
     if (waField) waField.style.display = "none";
+  }
+
+  // Если уже была попытка отправки — обновляем текст ошибки «на лету»
+  if (typeof contactSubmitAttempted !== "undefined" && contactSubmitAttempted) {
+    const s = getContactStepEl() || step;
+    validateContactStep(s, true);
   }
 });
 
@@ -2868,7 +2893,7 @@ document.addEventListener("click", (e) => {
       const waCustom = step.querySelector("#whatsapp-custom-input");
       const waError = step.querySelector("#whatsapp-error");
 
-      if (waError) waError.style.display = "none";
+      /* waError hint disabled */
 
       if (t.value === "custom") {
         if (waCustom) waCustom.style.display = "block";
@@ -2883,7 +2908,7 @@ document.addEventListener("click", (e) => {
 
   // === Telegram: только латиница + подсказка при кириллице ===
   document.addEventListener("input", (e) => {
-    const field = e.target;
+        const field = e.target;
     if (!field || field.id !== "contact-extra-input") return;
 
     const step = field.closest(".quiz-step");
@@ -2897,13 +2922,11 @@ document.addEventListener("click", (e) => {
     const tgHint = step.querySelector("#telegram-lang-hint");
 
     const hasCyr = /[А-Яа-яЁё]/.test(raw);
-    if (tgHint) tgHint.style.display = hasCyr ? "block" : "none";
 
     // санитизация: допускаем @ только в начале, далее A-Z a-z 0-9 _
     let v = raw;
 
-    // оставляем только допустимые символы
-    // сначала убираем пробелы
+    // убираем пробелы
     v = v.replace(/\s+/g, "");
 
     // если есть @ не в начале — удаляем
@@ -2916,10 +2939,231 @@ document.addEventListener("click", (e) => {
       v = "@" + v.slice(1).replace(/[^a-zA-Z0-9_]/g, "");
     } else {
       v = v.replace(/[^a-zA-Z0-9_]/g, "");
+      // Автопрефикс @: если пользователь вводит без @, добавляем его автоматически
+      if (v.length > 0) v = "@" + v;
+    }
+
+    // подсказка про EN: показываем, если была кириллица.
+    // фикс от "мигания": держим подсказку чуть дольше, даже если поле сразу санитизировалось.
+    if (hasCyr) {
+      field.dataset.tgCyrUntil = String(Date.now() + 400);
+      if (tgHint) tgHint.style.display = "block";
+    } else {
+      const until = parseInt(field.dataset.tgCyrUntil || "0", 10);
+      if (tgHint) tgHint.style.display = (Date.now() < until) ? "block" : "none";
+      if (Date.now() >= until) delete field.dataset.tgCyrUntil;
     }
 
     if (field.value !== v) field.value = v;
   });
+
+
+  // --- helpers: stable contact step + active contact type ---
+  function getContactStepEl() {
+    return document.querySelector('.quiz-step[data-step="contact"]')
+      || document.getElementById('contact-step')
+      || document.querySelector('#quiz-steps-container .quiz-step:last-child');
+  }
+
+  function getActiveContactType(stepEl) {
+    if (!stepEl) return "";
+    const btn =
+      stepEl.querySelector('.quiz-contact-button.active') ||
+      stepEl.querySelector('.quiz-contact-button.is-active') ||
+      stepEl.querySelector('.quiz-contact-button[aria-pressed="true"]') ||
+      stepEl.querySelector('.quiz-contact-button[data-active="true"]');
+    return btn && btn.dataset ? (btn.dataset.contactType || btn.dataset.contact || btn.dataset.type || "") : "";
+  }
+
+  function showQuizError(el, msg) {
+    if (!el) return;
+    el.textContent = msg || "";
+    if (msg) el.classList.add("visible");
+    else el.classList.remove("visible");
+  }
+
+  function setOutline(el, on) {
+    if (!el) return;
+    if (on) {
+      el.style.outline = "2px solid #dc2626";
+      el.style.outlineOffset = "2px";
+    } else {
+      el.style.outline = "";
+      el.style.outlineOffset = "";
+    }
+  }
+
+
+  // --- validation: contact step (all fields required except company) ---
+  function validateContactStep(stepEl, show) {
+    if (!stepEl) return false;
+    const shouldShow = (show !== false); // по умолчанию показываем, когда вызываем из submit/после попытки
+
+    const errorBox = stepEl.querySelector("#quiz-error-contact");
+
+    const nameInput   = stepEl.querySelector("#contact-name");
+    const phoneInput  = stepEl.querySelector("#contact-phone");
+    const emailInput  = stepEl.querySelector("#contact-email");
+    const privacyCheckbox = stepEl.querySelector("#privacy-checkbox");
+
+    const contactType = getActiveContactType(stepEl);
+
+    // блок кнопок способов связи
+    const contactButtonsWrap = stepEl.querySelector(".quiz-contact-buttons");
+    const methodErrorBox = null;
+// доп. поля
+    const contactExtraInput = stepEl.querySelector("#contact-extra-input");
+    const tgReq = stepEl.querySelector("#telegram-required-hint");
+    const tgHint = stepEl.querySelector("#telegram-lang-hint");
+
+    const waError = stepEl.querySelector("#whatsapp-error");
+    const waSourceCustom = stepEl.querySelector('input[name="wa_source"][value="custom"]');
+    const waCustomInput = stepEl.querySelector("#whatsapp-custom-input");
+
+    // helpers
+    function setMainError(msg) {
+      if (!shouldShow || !errorBox) return;
+      showQuizError(errorBox, msg);
+    }
+    function clearMainError() {
+      if (!shouldShow || !errorBox) return;
+      showQuizError(errorBox, "");
+    }
+    function setMethodError(msg, on) {
+      // no inline errors: only outline
+      if (!shouldShow) return;
+      setOutline(contactButtonsWrap, !!on);
+    }
+    function fail(msg, focusEl, opts) {
+      const o = opts || {};
+      /* tgReq hint disabled */
+      /* waError hint disabled */
+
+      // сброс подсветок
+      setOutline(nameInput, false);
+      setOutline(phoneInput, false);
+      setOutline(emailInput, false);
+      setOutline(contactExtraInput, false);
+      setOutline(waCustomInput, false);
+
+      // метод (только в общем блоке)
+      if (o.method) {
+        setMethodError(msg, true);
+        setMainError(msg);
+      } else {
+        setMethodError("", false);
+        setMainError(msg);
+      }
+
+      if (o.telegramRequired && tgReq) tgReq.style.display = "block";
+      if (o.whatsappRequired && waError) waError.style.display = "block";
+
+      if (focusEl && focusEl.focus) focusEl.focus();
+      return false;
+    }
+
+    // --- порядок проверок (все обязательные, кроме компании) ---
+    if (!nameInput || !nameInput.value.trim()) {
+      if (nameInput) setOutline(nameInput, true);
+      return fail("Пожалуйста, укажите ваше имя.", nameInput);
+    }
+
+    if (!phoneInput || !phoneInput.value.trim()) {
+      if (phoneInput) setOutline(phoneInput, true);
+      return fail("Пожалуйста, укажите телефон.", phoneInput);
+    }
+
+    if (!emailInput || !emailInput.value.trim()) {
+      if (emailInput) setOutline(emailInput, true);
+      return fail("Пожалуйста, укажите email.", emailInput);
+    }
+
+    const emailVal = emailInput.value.trim();
+    if (emailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+      setOutline(emailInput, true);
+      return fail("Укажите корректный email.", emailInput);
+    }
+
+    if (!contactType) {
+      return fail("Пожалуйста, выберите способ связи.", contactButtonsWrap, { method: true });
+    } else {
+      setMethodError("", false);
+    }
+
+    // Telegram: ник обязателен, латиница/цифры/_
+    if (contactType === "telegram") {
+      const rawNick = (contactExtraInput ? contactExtraInput.value.trim() : "");
+      if (!rawNick || rawNick === "@") {
+        if (contactExtraInput) setOutline(contactExtraInput, true);
+        return fail("Укажите ник в Telegram (например, @username).", contactExtraInput, { telegramRequired: true });
+      }
+      if (/[А-Яа-яЁё]/.test(rawNick)) {
+        if (contactExtraInput) setOutline(contactExtraInput, true);
+        // tgHint управляется oninput; здесь только основная ошибка
+        return fail("Ник Telegram вводится только латиницей. Переключите раскладку на EN.", contactExtraInput);
+      }
+      const nick = rawNick.startsWith("@") ? rawNick.slice(1) : rawNick;
+      if (!/^[a-zA-Z0-9_]{5,32}$/.test(nick)) {
+        if (contactExtraInput) setOutline(contactExtraInput, true);
+        return fail("Укажите корректный ник Telegram (только латиница, цифры и _; 5–32 символа).", contactExtraInput);
+      }
+      /* tgReq hint disabled */
+    }
+
+    // WhatsApp: если выбран «указать другой номер» — номер обязателен
+    if (contactType === "whatsapp") {
+      const useCustom = waSourceCustom && waSourceCustom.checked;
+      if (useCustom) {
+        const waNum = waCustomInput ? waCustomInput.value.trim() : "";
+        if (!waNum) {
+          if (waCustomInput) setOutline(waCustomInput, true);
+          return fail("Пожалуйста, укажите номер WhatsApp.", waCustomInput, { whatsappRequired: true });
+        }
+      }
+      /* waError hint disabled */
+    }
+
+    // Политика
+    if (!privacyCheckbox || !privacyCheckbox.checked) {
+      return fail("Необходимо согласиться с политикой конфиденциальности.", privacyCheckbox);
+    }
+
+    // Всё ок: очищаем ошибки
+    /* tgReq hint disabled */
+    /* waError hint disabled */
+    setMethodError("", false);
+    clearMainError();
+    return true;
+  }
+
+  // Live update ошибок после первой попытки отправки
+  document.addEventListener("input", (e) => {
+    if (!contactSubmitAttempted) return;
+    const step = getContactStepEl();
+    if (!step || !step.contains(e.target)) return;
+    validateContactStep(step, true);
+  });
+
+  document.addEventListener("change", (e) => {
+    if (!contactSubmitAttempted) return;
+    const step = getContactStepEl();
+    if (!step || !step.contains(e.target)) return;
+    validateContactStep(step, true);
+  });
+
+
+  function ensureInlineHint(id, afterEl, text) {
+    let el = document.getElementById(id);
+    if (!el && afterEl && afterEl.parentElement) {
+      el = document.createElement("div");
+      el.id = id;
+      el.className = "quiz-inline-error";
+      el.textContent = text;
+      el.style.display = "none";
+      afterEl.parentElement.appendChild(el);
+    }
+    return el;
+  }
 
 // === ОТПРАВКА ЗАЯВКИ ===
   const submitBtn = document.getElementById("quiz-submit");
@@ -2934,7 +3178,8 @@ document.addEventListener("click", (e) => {
 
     const scrollY = window.scrollY;
 
-    const lastStep = stepElements[stepElements.length - 1]; // последний шаг = контакты
+    const lastStep = getContactStepEl(); // контактный шаг (устойчиво)
+    if (!lastStep) return;
     const errorBox = lastStep.querySelector("#quiz-error-contact");
 
     const nameInput   = lastStep.querySelector("#contact-name");
@@ -2944,8 +3189,9 @@ document.addEventListener("click", (e) => {
 
     const privacyCheckbox = lastStep.querySelector("#privacy-checkbox");
 
-    const activeContactBtn = lastStep.querySelector(".quiz-contact-button.active");
-    const contactType = activeContactBtn ? activeContactBtn.dataset.contactType : "";
+    const contactType = getActiveContactType(lastStep);
+    // элементы для дальнейшей сборки текста (используются ниже)
+    const contactExtraInput = lastStep.querySelector("#contact-extra-input");
 
     const waField = lastStep.querySelector("#whatsapp-field");
     const waSourceMain = lastStep.querySelector('input[name="wa_source"][value="main"]');
@@ -2953,64 +3199,13 @@ document.addEventListener("click", (e) => {
     const waCustomInput = lastStep.querySelector("#whatsapp-custom-input");
     const waError = lastStep.querySelector("#whatsapp-error");
 
-    // Telegram: ник обязателен и только латиница/цифры/_
-    if (contactType === "telegram") {
-      const rawNick = (contactExtraInput ? contactExtraInput.value.trim() : "");
-      const nick = rawNick.startsWith("@") ? rawNick.slice(1) : rawNick;
-
-      const isValidNick = /^[a-zA-Z0-9_]{5,32}$/.test(nick);
-      if (!isValidNick) {
-        errorBox.textContent = "Укажите корректный ник Telegram (только латиница, цифры и _; 5–32 символа).";
-        errorBox.classList.add("visible");
-        return;
-      }
-    }
-
-    // WhatsApp: выбрать основной или указать другой (если выбран другой — он обязателен)
-    if (contactType === "whatsapp") {
-      if (waError) waError.style.display = "none";
-
-      const useCustom = waSourceCustom && waSourceCustom.checked;
-      if (useCustom) {
-        const waNum = waCustomInput ? waCustomInput.value.trim() : "";
-        if (!waNum) {
-          if (waError) waError.style.display = "block";
-          errorBox.textContent = "Пожалуйста, укажите номер WhatsApp.";
-          errorBox.classList.add("visible");
-          return;
-        }
-      } else {
-        const basePhone = phoneInput ? phoneInput.value.trim() : "";
-        if (!basePhone) {
-          if (waError) waError.style.display = "block";
-          errorBox.textContent = "Укажите телефон или выберите «Указать другой номер» для WhatsApp.";
-          errorBox.classList.add("visible");
-          return;
-        }
-      }
-    }
-    const contactExtraInput = lastStep.querySelector("#contact-extra-input");
-
-    if (!nameInput.value.trim()) {
-      errorBox.textContent = "Пожалуйста, укажите ваше имя.";
-      errorBox.classList.add("visible");
+    // Валидация (все поля обязательные, кроме компании)
+    contactSubmitAttempted = true;
+    if (!validateContactStep(lastStep, true)) {
+      // не даём странице «прыгать» при клике на submit
+      window.scrollTo(0, scrollY);
       return;
     }
-
-    if (!phoneInput.value.trim() && !emailInput.value.trim()) {
-      errorBox.textContent = "Укажите телефон или email для связи.";
-      errorBox.classList.add("visible");
-      return;
-    }
-
-    if (!privacyCheckbox.checked) {
-      errorBox.textContent = "Необходимо согласиться с политикой конфиденциальности.";
-      errorBox.classList.add("visible");
-      return;
-    }
-
-    errorBox.textContent = "";
-    errorBox.classList.remove("visible");
 
     // --- Сбор всех ответов квиза ---
     let answersText = "";
@@ -3184,6 +3379,200 @@ document.addEventListener("input", (e) => {
 
 
   </script>
+
+
+<!-- Чернильный курсор (ink cursor) -->
+<!-- https://mt-webdesign.ru/inkcursor -->
+<script src="https://matilda-design.ru/library/GSAP.js"></script>
+
+<svg class="ink-icon" xmlns="http://www.w3.org/2000/svg" version="1.1" width="800" aria-hidden="true">
+  <defs>
+    <filter id="goo">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+      <feColorMatrix in="blur" mode="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 35 -15" result="goo" />
+      <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+    </filter>
+  </defs>
+</svg>
+
+<div id="cursor" class="Cursor" aria-hidden="true"></div>
+
+<style>
+  .ink-icon { display: none; }
+
+  .Cursor {
+    pointer-events: none;
+    position: fixed;
+    display: block;
+    border-radius: 0;
+    transform-origin: center center;
+    top: 0;
+    left: 0;
+    z-index: 999999;
+    filter: url("#goo");
+    mix-blend-mode: difference;
+  }
+  .Cursor span {
+    position: absolute;
+    display: block;
+    width: 26px;
+    height: 26px;
+    border-radius: 20px;
+    background-color: #fff;
+    transform-origin: center center;
+    transform: translate(-50%, -50%);
+  }
+
+  @media screen and (max-width: 480px) {
+    .Cursor { display: none; }
+  }
+</style>
+
+<script>
+(function () {
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true });
+    } else {
+      obj[key] = value;
+    }
+    return obj;
+  }
+
+  var cursor = document.getElementById("cursor");
+  if (!cursor) return;
+
+  var amount = 20;
+  var sineDots = Math.floor(amount * 0.3);
+  var width = 26;
+  var idleTimeout = 150;
+
+  var lastFrame = 0;
+  var mousePosition = { x: 0, y: 0 };
+  var dots = [];
+  var timeoutID;
+  var idle = false;
+
+  // If GSAP didn't load for some reason, avoid breaking the page
+  var hasGSAP = (typeof window.TweenMax !== "undefined");
+
+  function Dot(index) {
+    if (index === void 0) index = 0;
+    this.index = index;
+    this.anglespeed = 0.05;
+    this.x = 0;
+    this.y = 0;
+    this.scale = 1 - 0.05 * index;
+    this.range = width / 2 - width / 2 * this.scale + 2;
+    this.limit = width * 0.75 * this.scale;
+    this.element = document.createElement("span");
+    if (hasGSAP) {
+      TweenMax.set(this.element, { scale: this.scale });
+    } else {
+      this.element.style.transform = "translate(-50%, -50%) scale(" + this.scale + ")";
+    }
+    cursor.appendChild(this.element);
+  }
+
+  Dot.prototype.lock = function () {
+    this.lockX = this.x;
+    this.lockY = this.y;
+    this.angleX = Math.PI * 2 * Math.random();
+    this.angleY = Math.PI * 2 * Math.random();
+  };
+
+  Dot.prototype.draw = function () {
+    if (!idle || this.index <= sineDots) {
+      if (hasGSAP) TweenMax.set(this.element, { x: this.x, y: this.y });
+      else this.element.style.transform = "translate(" + (this.x) + "px," + (this.y) + "px)";
+    } else {
+      this.angleX += this.anglespeed;
+      this.angleY += this.anglespeed;
+      this.y = this.lockY + Math.sin(this.angleY) * this.range;
+      this.x = this.lockX + Math.sin(this.angleX) * this.range;
+      if (hasGSAP) TweenMax.set(this.element, { x: this.x, y: this.y });
+      else this.element.style.transform = "translate(" + (this.x) + "px," + (this.y) + "px)";
+    }
+  };
+
+  function startIdleTimer() {
+    timeoutID = setTimeout(goInactive, idleTimeout);
+    idle = false;
+  }
+
+  function resetIdleTimer() {
+    clearTimeout(timeoutID);
+    startIdleTimer();
+  }
+
+  function goInactive() {
+    idle = true;
+    for (var i = 0; i < dots.length; i++) dots[i].lock();
+  }
+
+  function buildDots() {
+    for (var i = 0; i < amount; i++) dots.push(new Dot(i));
+  }
+
+  function onMouseMove(event) {
+    mousePosition.x = event.clientX - width / 2;
+    mousePosition.y = event.clientY - width / 2;
+    resetIdleTimer();
+  }
+
+  function onTouchMove(event) {
+    if (!event || !event.touches || !event.touches[0]) return;
+    mousePosition.x = event.touches[0].clientX - width / 2;
+    mousePosition.y = event.touches[0].clientY - width / 2;
+    resetIdleTimer();
+  }
+
+  function positionCursor() {
+    var x = mousePosition.x;
+    var y = mousePosition.y;
+
+    for (var i = 0; i < dots.length; i++) {
+      var dot = dots[i];
+      var nextDot = dots[i + 1] || dots[0];
+
+      dot.x = x;
+      dot.y = y;
+      dot.draw();
+
+      if (!idle || i <= sineDots) {
+        var dx = (nextDot.x - dot.x) * 0.35;
+        var dy = (nextDot.y - dot.y) * 0.35;
+        x += dx;
+        y += dy;
+      }
+    }
+  }
+
+  function render(timestamp) {
+    // requestAnimationFrame passes a high-res timestamp
+    lastFrame = timestamp;
+    positionCursor();
+    requestAnimationFrame(render);
+  }
+
+  function init() {
+    window.addEventListener("mousemove", onMouseMove, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    lastFrame = performance.now();
+    buildDots();
+    startIdleTimer();
+    requestAnimationFrame(render);
+  }
+
+  // Wait until DOM is ready so #cursor exists and quiz is rendered
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
 
 </body>
 </html>

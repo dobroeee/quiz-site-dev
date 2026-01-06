@@ -3354,5 +3354,55 @@ document.addEventListener("input", (e) => {
 <!-- Чернильный курсор (ink cursor) -->
 <!-- https://mt-webdesign.ru/inkcursor -->
 
+
+<script>
+(function () {
+  function getDocHeight() {
+    return Math.max(
+      document.body ? document.body.scrollHeight : 0,
+      document.documentElement ? document.documentElement.scrollHeight : 0,
+      document.body ? document.body.offsetHeight : 0,
+      document.documentElement ? document.documentElement.offsetHeight : 0
+    );
+  }
+
+  function postHeight() {
+    try {
+      var h = getDocHeight();
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "quizHeight", height: h }, "*");
+      }
+    } catch (e) {}
+  }
+
+  // Initial
+  if (document.readyState === "complete") postHeight();
+  else window.addEventListener("load", postHeight);
+
+  // On resize
+  window.addEventListener("resize", function () {
+    postHeight();
+  });
+
+  // Observe DOM changes (dynamic steps)
+  try {
+    var ro = new ResizeObserver(function () {
+      postHeight();
+    });
+    ro.observe(document.documentElement);
+  } catch (e) {
+    // Fallback for older browsers
+    var mo = new MutationObserver(function () {
+      postHeight();
+    });
+    mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+  }
+
+  // Safety ping (rare cases where observers don't fire inside iframes)
+  setTimeout(postHeight, 300);
+  setTimeout(postHeight, 1000);
+})();
+</script>
+
 </body>
 </html>

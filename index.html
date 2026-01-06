@@ -3354,39 +3354,5 @@ document.addEventListener("input", (e) => {
 <!-- Чернильный курсор (ink cursor) -->
 <!-- https://mt-webdesign.ru/inkcursor -->
 
-
-<script>
-/* IFRAME_AUTO_HEIGHT */
-(function () {
-  function sendHeight() {
-    try {
-      var h = Math.ceil(document.documentElement.scrollHeight);
-      window.parent && window.parent.postMessage({ type: "quizHeight", height: h }, "*");
-    } catch (e) {}
-  }
-
-  // initial + reactive
-  window.addEventListener("load", sendHeight);
-  window.addEventListener("resize", sendHeight);
-
-  // React to UI changes (steps, extra fields, thanks screen, errors)
-  document.addEventListener("input", sendHeight, true);
-  document.addEventListener("change", sendHeight, true);
-  document.addEventListener("click", sendHeight, true);
-
-  if (window.ResizeObserver) {
-    var ro = new ResizeObserver(function () { sendHeight(); });
-    ro.observe(document.documentElement);
-  } else {
-    // fallback polling
-    setInterval(sendHeight, 300);
-  }
-
-  // small delayed sends (for animations / delayed DOM updates)
-  setTimeout(sendHeight, 50);
-  setTimeout(sendHeight, 300);
-})();
-</script>
-
 </body>
 </html>

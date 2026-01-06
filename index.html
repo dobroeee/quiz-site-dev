@@ -3358,37 +3358,50 @@ document.addEventListener("input", (e) => {
 <script>
 /* TILDA_BLOCK_AUTOFIT */
 (function () {
+  function px(n) { return Math.max(0, Math.ceil(Number(n) || 0)); }
+
   function fitTildaBlock() {
     var quiz = document.querySelector('.quiz-wrapper');
     if (!quiz) return;
 
-    // Actual height of quiz content
-    var h = Math.ceil(quiz.scrollHeight);
-
-    // If quiz is inside Tilda ZeroBlock (t396), adjust artboard & related wrappers
+    // Find the closest ZeroBlock artboard (if any)
     var artboard = quiz.closest('.t396__artboard');
-    if (artboard) {
-      artboard.style.height = h + 'px';
-      artboard.setAttribute('data-artboard-height', String(h));
-    }
+    if (!artboard) return;
 
-    // Some templates rely on carrier/filter heights too
+    // Compute height based on the actual visible box, not scrollHeight.
+    // This avoids "max height" artifacts when content was taller on other steps.
+    var quizRect = quiz.getBoundingClientRect();
+    var artRect = artboard.getBoundingClientRect();
+
+    // Include the quiz element's bottom margin if present
+    var cs = window.getComputedStyle(quiz);
+    var mb = parseFloat(cs.marginBottom) || 0;
+
+    var desired = px((quizRect.bottom - artRect.top) + mb);
+
+    // Safety floor: never go below current minimal visible height
+    desired = Math.max(desired, 200);
+
+    // Apply to ZeroBlock wrappers
+    artboard.style.height = desired + 'px';
+    artboard.setAttribute('data-artboard-height', String(desired));
+
+    // Carrier/filter are used for background and should match
     var rec = quiz.closest('.t-rec');
     if (rec) {
-      rec.style.height = h + 'px';
+      rec.style.height = desired + 'px';
       var carrier = rec.querySelector('.t396__carrier');
-      if (carrier) carrier.style.height = h + 'px';
+      if (carrier) carrier.style.height = desired + 'px';
       var filter = rec.querySelector('.t396__filter');
-      if (filter) filter.style.height = h + 'px';
+      if (filter) filter.style.height = desired + 'px';
     }
   }
 
   function scheduleFit() {
-    // small delay so DOM updates (show/hide fields) are applied
-    setTimeout(fitTildaBlock, 30);
+    // Let DOM settle (show/hide, validation messages, thanks screen)
+    setTimeout(fitTildaBlock, 50);
   }
 
-  // Initial
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', scheduleFit);
   } else {
@@ -3397,12 +3410,11 @@ document.addEventListener("input", (e) => {
   window.addEventListener('load', scheduleFit);
   window.addEventListener('resize', scheduleFit);
 
-  // React to quiz changes
+  // Update when quiz UI changes
   document.addEventListener('change', scheduleFit, true);
   document.addEventListener('input', scheduleFit, true);
   document.addEventListener('click', scheduleFit, true);
 
-  // Best: observe size changes
   if (window.ResizeObserver) {
     var ro = new ResizeObserver(scheduleFit);
     var quizEl = document.querySelector('.quiz-wrapper');
